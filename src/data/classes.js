@@ -1,0 +1,93 @@
+const CLASSES = {
+    WARRIOR: {
+        id: 'WARRIOR',
+        name: 'Guerrero',
+        description: 'Especialista en combate cuerpo a cuerpo y absorción de daño.',
+        role: 'front',
+        allowedAlignments: null,
+        baseStats: { str: 14, agi: 10, vit: 12, int: 6, wis: 6, luk: 8 },
+        hpPerLevel: 12,
+        mpPerLevel: 2,
+        skills: ['attack', 'defend', 'powerStrike', 'warCry'],
+        spellSlots: {},
+        equipment: { weapon: ['sword', 'axe', 'mace'], armor: ['heavy', 'medium', 'shield'] }
+    },
+    MAGE: {
+        id: 'MAGE',
+        name: 'Mago',
+        description: 'Dominio de hechizos ofensivos elementales y de área.',
+        role: 'back',
+        allowedAlignments: null,
+        baseStats: { str: 6, agi: 8, vit: 7, int: 14, wis: 12, luk: 8 },
+        hpPerLevel: 6,
+        mpPerLevel: 8,
+        skills: ['attack', 'defend', 'fireball', 'iceSpike', 'lightning'],
+        spellSlots: { 1: 3, 2: 2, 3: 1 },
+        equipment: { weapon: ['staff', 'dagger'], armor: ['cloth', 'light'] }
+    },
+    CLERIC: {
+        id: 'CLERIC',
+        name: 'Clérigo',
+        description: 'Sanador y especialista en bendiciones/magia defensiva.',
+        role: 'back',
+        allowedAlignments: ['LAWFUL_GOOD', 'NEUTRAL_GOOD', 'LAWFUL_NEUTRAL', 'TRUE_NEUTRAL'],
+        baseStats: { str: 8, agi: 7, vit: 10, int: 10, wis: 14, luk: 8 },
+        hpPerLevel: 8,
+        mpPerLevel: 6,
+        skills: ['attack', 'defend', 'heal', 'bless', 'curePoison'],
+        spellSlots: { 1: 3, 2: 2, 3: 1 },
+        equipment: { weapon: ['mace', 'staff'], armor: ['medium', 'shield'] }
+    },
+    ROGUE: {
+        id: 'ROGUE',
+        name: 'Pícaro',
+        description: 'Maestro de la agilidad, detección de trampas y ataques furtivos.',
+        role: 'front',
+        allowedAlignments: null,
+        baseStats: { str: 8, agi: 14, vit: 8, int: 8, wis: 6, luk: 12 },
+        hpPerLevel: 8,
+        mpPerLevel: 3,
+        skills: ['attack', 'defend', 'backstab', 'disarmTrap', 'pickLock'],
+        spellSlots: {},
+        equipment: { weapon: ['dagger', 'shortSword'], armor: ['light', 'medium'] }
+    },
+    PALADIN: {
+        id: 'PALADIN',
+        name: 'Paladín',
+        description: 'Mezcla de Guerrero y Clérigo. Requiere alineación Leal Bueno.',
+        role: 'front',
+        allowedAlignments: ['LAWFUL_GOOD'],
+        baseStats: { str: 12, agi: 8, vit: 12, int: 8, wis: 12, luk: 8 },
+        hpPerLevel: 10,
+        mpPerLevel: 5,
+        skills: ['attack', 'defend', 'holySmite', 'healAlly', 'layOnHands'],
+        spellSlots: { 1: 2, 2: 1 },
+        equipment: { weapon: ['sword', 'mace'], armor: ['heavy', 'shield'] }
+    },
+    ASSASSIN: {
+        id: 'ASSASSIN',
+        name: 'Asesino',
+        description: 'Ataques críticos devastadores y venenos. Requiere alineación malvado.',
+        role: 'front',
+        allowedAlignments: ['CHAOTIC_EVIL', 'NEUTRAL_EVIL', 'LAWFUL_EVIL'],
+        baseStats: { str: 10, agi: 14, vit: 7, int: 8, wis: 6, luk: 12 },
+        hpPerLevel: 7,
+        mpPerLevel: 3,
+        skills: ['attack', 'defend', 'assassinate', 'poisonBlade', 'vanish'],
+        spellSlots: {},
+        equipment: { weapon: ['dagger', 'shortSword'], armor: ['light'] }
+    },
+    RANGER: {
+        id: 'RANGER',
+        name: 'Guardabosques',
+        description: 'Ataque a distancia y magia de apoyo natural.',
+        role: 'back',
+        allowedAlignments: ['TRUE_NEUTRAL', 'NEUTRAL_GOOD', 'LAWFUL_GOOD', 'CHAOTIC_GOOD'],
+        baseStats: { str: 10, agi: 12, vit: 9, int: 8, wis: 12, luk: 9 },
+        hpPerLevel: 9,
+        mpPerLevel: 4,
+        skills: ['attack', 'defend', 'archery', 'track', 'entangle'],
+        spellSlots: { 1: 2 },
+        equipment: { weapon: ['bow', 'shortSword'], armor: ['light', 'medium'] }
+    }
+};

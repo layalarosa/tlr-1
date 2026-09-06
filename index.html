@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Las Fauces - Dungeon Crawler RPG</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        #game-container { position: relative; }
+        canvas { display: block; image-rendering: pixelated; }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+    <script src="vendor/phaser.min.js"></script>
+    <script src="src/data/races.js"></script>
+    <script src="src/data/classes.js"></script>
+    <script src="src/data/enemies.js"></script>
+    <script src="src/data/items.js"></script>
+    <script src="src/entities/Character.js"></script>
+    <script src="src/entities/Enemy.js"></script>
+    <script src="src/systems/DungeonGenerator.js"></script>
+    <script src="src/systems/CombatSystem.js"></script>
+    <script src="src/systems/SaveSystem.js"></script>
+    <script src="src/systems/AlignmentSystem.js"></script>
+    <script src="src/ui/HUD.js"></script>
+    <script src="src/ui/MenuUI.js"></script>
+    <script src="src/scenes/BootScene.js"></script>
+    <script src="src/scenes/MenuScene.js"></script>
+    <script src="src/scenes/CreatePartyScene.js"></script>
+    <script src="src/scenes/ExploreScene.js"></script>
+    <script src="src/scenes/CombatScene.js"></script>
+    <script src="src/scenes/GameOverScene.js"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>

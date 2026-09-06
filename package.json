@@ -1,0 +1,16 @@
+{
+  "name": "las-fauces",
+  "version": "1.0.0",
+  "description": "Dungeon crawler RPG - First Person Grid-Based",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "npx serve .",
+    "build": "npx webpack --mode production"
+  },
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
