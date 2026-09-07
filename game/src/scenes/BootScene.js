@@ -65,10 +65,23 @@ class BootScene extends Phaser.Scene {
             canvas.height = maxH;
             var ctx = canvas.getContext('2d');
 
+            ctx.imageSmoothingEnabled = false;
             for (var j = 0; j < frames.length; j++) {
                 var rect = frames[j];
                 ctx.drawImage(src, rect.x, rect.y, rect.width, rect.height, j * maxW, 0, rect.width, rect.height);
             }
+
+            var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            for (var p = 0; p < imageData.data.length; p += 4) {
+                if (imageData.data[p + 3] === 0) continue;
+                var red = imageData.data[p] * 0.62 + 18;
+                var green = imageData.data[p + 1] * 0.42;
+                var blue = imageData.data[p + 2] * 0.44;
+                imageData.data[p] = Math.min(255, red);
+                imageData.data[p + 1] = Math.min(255, green);
+                imageData.data[p + 2] = Math.min(255, blue);
+            }
+            ctx.putImageData(imageData, 0, 0);
 
             self.textures.addSpriteSheet('enemies_' + gameKey, canvas, { frameWidth: maxW, frameHeight: maxH });
         });

@@ -26,7 +26,7 @@ class DungeonGenerator {
         this._connect(map, rooms);
         this._doors(map, rooms);
         this._traps(map, config.traps);
-        this._chests(map, config.chests, floor);
+        var storyTarget = this._chests(map, config.chests, floor);
         if (config.shop > 0) this._shop(map, rooms);
 
         var start = this._center(rooms[0]);
@@ -37,7 +37,7 @@ class DungeonGenerator {
             map[stairsPos.y][stairsPos.x] = { type: 'stairs', explored: false, visible: false };
         }
 
-        return { floor: floor, name: config.name, width: config.width, height: config.height, map: map, playerStart: start, stairsPos: stairsPos };
+        return { floor: floor, name: config.name, width: config.width, height: config.height, map: map, playerStart: start, stairsPos: stairsPos, storyTarget: storyTarget };
     }
 
     _emptyMap(w, h) {
@@ -49,17 +49,23 @@ class DungeonGenerator {
     _genRooms(map, config) {
         var rooms = [];
         var max = 4 + Math.floor(Math.random() * 3);
-        var minS = 3, maxS = Math.min(6, Math.floor(Math.min(config.width, config.height) / 3));
+        var minS = 3;
+        var maxS = Math.min(5, Math.max(minS, Math.floor(Math.min(config.width, config.height) / 2)));
         for (var i = 0; i < max * 15 && rooms.length < max; i++) {
-            var rw = minS + Math.floor(Math.random() * (maxS - minS));
-            var rh = minS + Math.floor(Math.random() * (maxS - minS));
-            var rx = 1 + Math.floor(Math.random() * (config.width - rw - 2));
-            var ry = 1 + Math.floor(Math.random() * (config.height - rh - 2));
+            var rw = minS + Math.floor(Math.random() * (maxS - minS + 1));
+            var rh = minS + Math.floor(Math.random() * (maxS - minS + 1));
+            var rx = 1 + Math.floor(Math.random() * Math.max(1, config.width - rw - 1));
+            var ry = 1 + Math.floor(Math.random() * Math.max(1, config.height - rh - 1));
             var room = { x: rx, y: ry, w: rw, h: rh };
             if (!this._overlap(room, rooms)) {
                 this._carve(map, room);
                 rooms.push(room);
             }
+        }
+        if (rooms.length === 0) {
+            var fallback = { x: 1, y: 1, w: Math.min(3, config.width - 2), h: Math.min(3, config.height - 2) };
+            this._carve(map, fallback);
+            rooms.push(fallback);
         }
         return rooms;
     }
@@ -81,16 +87,36 @@ class DungeonGenerator {
     _connect(map, rooms) {
         for (var i = 0; i < rooms.length - 1; i++) {
             var a = this._center(rooms[i]), b = this._center(rooms[i + 1]);
-            var x = a.x, y = a.y;
-            while (x !== b.x) {
-                if (map[y] && map[y][x] && map[y][x].type === 'wall') map[y][x] = { type: 'floor', explored: false, visible: false };
-                x += x < b.x ? 1 : -1;
-            }
-            while (y !== b.y) {
-                if (map[y] && map[y][x] && map[y][x].type === 'wall') map[y][x] = { type: 'floor', explored: false, visible: false };
-                y += y < b.y ? 1 : -1;
-            }
+            this._carveCorridor(map, a, b, Math.random() < 0.5);
         }
+
+        // Extra links create loops so exploration is not a single forced hallway.
+        for (var link = 0; link < rooms.length - 2; link++) {
+            if (Math.random() > 0.45) continue;
+            var first = rooms[link];
+            var second = rooms[link + 2];
+            this._carveCorridor(map, this._center(first), this._center(second), Math.random() < 0.5);
+        }
+    }
+
+    _carveCorridor(map, start, end, horizontalFirst) {
+        var x = start.x, y = start.y;
+        var carve = function(cx, cy) {
+            if (map[cy] && map[cy][cx] && map[cy][cx].type === 'wall') {
+                map[cy][cx] = { type: 'floor', explored: false, visible: false };
+            }
+        };
+        var horizontal = function() {
+            while (x !== end.x) { carve(x, y); x += x < end.x ? 1 : -1; }
+        };
+        var vertical = function() {
+            while (y !== end.y) { carve(x, y); y += y < end.y ? 1 : -1; }
+        };
+
+        carve(x, y);
+        if (horizontalFirst) { horizontal(); vertical(); }
+        else { vertical(); horizontal(); }
+        carve(end.x, end.y);
     }
 
     _doors(map, rooms) {
@@ -128,6 +154,7 @@ class DungeonGenerator {
 
     _chests(map, count, floor) {
         var placed = 0, att = 0;
+        var storyTarget = null;
         while (placed < count && att < 200) {
             var y = Math.floor(Math.random() * map.length);
             var x = Math.floor(Math.random() * map[0].length);
@@ -135,10 +162,15 @@ class DungeonGenerator {
                 map[y][x].chest = true;
                 map[y][x].chestOpen = false;
                 map[y][x].chestLoot = this._loot(floor);
+                if (floor === 1 && !storyTarget) {
+                    map[y][x].storyClue = true;
+                    storyTarget = { x: x, y: y };
+                }
                 placed++;
             }
             att++;
         }
+        return storyTarget;
     }
 
     _shop(map, rooms) {

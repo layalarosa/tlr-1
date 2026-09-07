@@ -19,6 +19,7 @@ class ShopScene extends Phaser.Scene {
         this.shopGreeting = getShopDialogue('greeting');
         this._draw();
         this._input();
+        if (window.setTouchContext) window.setTouchContext('shop');
     }
 
     _clear() { this.group.clear(true, true); }
@@ -93,7 +94,7 @@ class ShopScene extends Phaser.Scene {
             var canBuy = self.gold >= item.price;
             self._txt(50, 145 + i * 22, '[' + (i + 1) + '] ' + item.name + ' - ' + item.price + ' oro' + (item.atk ? ' [ATK+' + item.atk + ']' : item.def ? ' [DEF+' + item.def + ']' : item.value ? ' [+' + item.value + ']' : ''), { size: '11px', color: canBuy ? '#cccccc' : '#555555' });
         });
-        this._txt(GAME_W / 2, 440, 'Tecla num=comprar  |  ENTER=vender  |  TAB=cambiar', { size: '10px', color: '#555555', origin: 0.5 });
+        this._txt(GAME_W / 2, 440, 'Tecla num=seleccionar  |  ENTER=comprar  |  TAB=cambiar', { size: '10px', color: '#555555', origin: 0.5 });
     }
 
     _drawSell() {

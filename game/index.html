@@ -9,27 +9,177 @@
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: monospace; }
-        #game-container { position: relative; }
-        canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
-        #back-btn { position: fixed; top: 10px; left: 10px; padding: 8px 16px; background: rgba(30,30,60,0.9); color: #aaaaff; border: 1px solid #4444aa; border-radius: 4px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 10px; z-index: 1000; text-decoration: none; transition: all 0.2s; }
-        #back-btn:hover { background: rgba(60,60,120,0.95); border-color: #ffaa44; color: #ffaa44; }
-        #touch-controls { display: none; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; }
-        #touch-controls .row { display: flex; justify-content: center; gap: 5px; margin: 2px 0; }
-        #touch-controls button { width: 50px; height: 50px; font-size: 18px; background: rgba(30,30,60,0.8); color: #aaaaff; border: 1px solid #4444aa; border-radius: 6px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-        #touch-controls button:active { background: rgba(60,60,120,0.9); }
-        @media (pointer: coarse) { #touch-controls { display: block; } }
+        body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; height: 100dvh; font-family: monospace; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+        #game-container { position: relative; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+        canvas { display: block; margin: auto; image-rendering: pixelated; image-rendering: crisp-edges; }
+        #game-container .three-dungeon-canvas { position: absolute; top: 0; left: 0; z-index: 2; width: 100%; height: 62%; margin: 0; image-rendering: auto; cursor: crosshair; }
+        #back-btn { position: fixed; top: 10px; left: 10px; padding: 8px 16px; background: rgba(28,10,16,0.94); color: #c18b7c; border: 1px solid #63313a; border-radius: 2px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 10px; z-index: 1000; text-decoration: none; transition: all 0.2s; }
+        #back-btn:hover { background: rgba(70,20,28,0.98); border-color: #d49a52; color: #ffe0b5; }
+
+        #touch-controls { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; padding: 6px 4px 12px; background: rgba(10,3,6,0.96); border-top: 1px solid #4b252e; touch-action: none; }
+        #touch-controls .tc-row { display: flex; justify-content: center; gap: 4px; margin: 3px 0; }
+        #touch-controls .tc-btn {
+            min-width: 44px; height: 44px; padding: 0 8px;
+            font-size: 14px; font-family: 'Share Tech Mono', monospace;
+            background: rgba(36,12,18,0.94); color: #c18b7c;
+            border: 1px solid #63313a; border-radius: 2px;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.1s;
+        }
+        #touch-controls .tc-btn:active { background: rgba(110,34,40,0.98); border-color: #d49a52; }
+        #touch-controls .tc-btn.tc-dir { width: 56px; height: 56px; font-size: 22px; }
+        #touch-controls .tc-btn.tc-ok { width: 56px; height: 56px; font-size: 14px; font-weight: bold; background: rgba(40,60,40,0.9); border-color: #44aa44; color: #66ff66; }
+        #touch-controls .tc-btn.tc-ok:active { background: rgba(60,100,60,0.95); }
+        #touch-controls .tc-btn.tc-tool { min-width: 38px; height: 34px; font-size: 11px; background: rgba(20,20,50,0.9); border-color: #333366; color: #7777aa; }
+        #touch-controls .tc-btn.tc-num { min-width: 48px; height: 40px; font-size: 16px; }
+        #touch-controls .tc-btn.tc-action { min-width: 60px; height: 40px; font-size: 13px; }
+        #touch-controls .tc-btn.tc-enter { background: rgba(40,60,40,0.9); border-color: #44aa44; color: #66ff66; }
+        #touch-controls .tc-btn.tc-esc { background: rgba(60,30,30,0.9); border-color: #aa4444; color: #ff6666; }
+        #touch-controls .tc-section { display: none; }
+        #touch-controls .tc-section.active { display: block; }
+        #btn-help { position: fixed; top: 10px; right: 10px; z-index: 1100; display: none; width: 38px; height: 38px; border: 1px solid #d49a52; border-radius: 50%; background: #1b0a10; color: #ffe0b5; font: bold 20px 'Share Tech Mono', monospace; }
+        #controls-help { display: none; position: fixed; inset: 0; z-index: 1200; padding: 18px; background: rgba(8, 2, 5, 0.98); color: #ead6c1; font-family: 'Share Tech Mono', monospace; overflow-y: auto; }
+        #controls-help.visible { display: block; }
+        #controls-help h2 { margin: 4px 0 14px; color: #ffaa44; font: 20px 'VT323', monospace; letter-spacing: 1px; }
+        #controls-help h3 { margin: 12px 0 4px; color: #aaaaff; font: 16px 'VT323', monospace; }
+        #controls-help p { margin: 4px 0; font-size: 13px; line-height: 1.35; }
+        #close-help { margin-top: 18px; min-height: 42px; padding: 8px 18px; border: 1px solid #44aa66; background: #102818; color: #88ffaa; font: 14px 'Share Tech Mono', monospace; }
+
+        #rotate-hint { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 9999; color: #aaaaff; font-family: 'Share Tech Mono', monospace; font-size: 14px; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; }
+        #rotate-hint .rotate-icon { font-size: 48px; margin-bottom: 16px; animation: rotate-hint-anim 2s ease-in-out infinite; }
+        @keyframes rotate-hint-anim { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(90deg); } }
+
+        @media (max-width: 600px) and (orientation: portrait) { #rotate-hint { display: flex; } }
+        @media (orientation: landscape) and (max-height: 600px) and (pointer: coarse) {
+            #game-container { height: calc(100% - 132px); align-items: flex-start; }
+            #btn-help { display: block; }
+            #touch-controls { padding: 3px 4px max(5px, env(safe-area-inset-bottom)); }
+            #touch-controls .tc-row { gap: 3px; margin: 1px 0; }
+            #touch-controls .tc-btn { min-width: 38px; height: 30px; font-size: 12px; }
+            #touch-controls .tc-btn.tc-dir { width: 42px; height: 36px; font-size: 18px; }
+            #touch-controls .tc-btn.tc-tool { min-width: 36px; height: 25px; font-size: 10px; }
+            #touch-controls .tc-btn.tc-num { min-width: 45px; height: 29px; font-size: 12px; }
+            #touch-controls .tc-btn.tc-action { min-width: 58px; height: 29px; font-size: 11px; }
+        }
     </style>
 </head>
 <body>
-    <a href="../" id="back-btn">← VOLVER</a>
-    <div id="game-container" style="visibility: hidden;">
-        <div id="touch-controls">
-            <div class="row"><button id="btn-up">&#9650;</button></div>
-            <div class="row"><button id="btn-left">&#9664;</button><button id="btn-interact">OK</button><button id="btn-right">&#9654;</button></div>
-            <div class="row"><button id="btn-down">&#9660;</button></div>
+    <div id="rotate-hint">
+        <div class="rotate-icon">&#8635;</div>
+        <div>Gira tu celular en horizontal para jugar</div>
+    </div>
+    <a href="../" id="back-btn">&#8592; VOLVER</a>
+    <div id="game-container" style="visibility: hidden;"></div>
+    <div id="touch-controls">
+        <div id="tc-explore" class="tc-section active">
+            <div class="tc-row">
+                <button id="btn-i" class="tc-btn tc-tool">I</button>
+                <button id="btn-v" class="tc-btn tc-tool">V</button>
+                <button id="btn-f5" class="tc-btn tc-tool">F5</button>
+                <button id="btn-tab-explore" class="tc-btn tc-tool">TAB</button>
+            </div>
+            <div class="tc-row">
+                <button id="btn-up" class="tc-btn tc-dir">&#9650;</button>
+            </div>
+            <div class="tc-row">
+                <button id="btn-left" class="tc-btn tc-dir">&#9664;</button>
+                <button id="btn-interact" class="tc-btn tc-ok">OK</button>
+                <button id="btn-right" class="tc-btn tc-dir">&#9654;</button>
+            </div>
+            <div class="tc-row">
+                <button id="btn-down" class="tc-btn tc-dir">&#9660;</button>
+            </div>
+        </div>
+        <div id="tc-combat" class="tc-section">
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="1" title="1 - Atacar">1 ATK</button>
+                <button class="tc-btn tc-num" data-key="2" title="2 - Magia">2 MAG</button>
+                <button class="tc-btn tc-num" data-key="3" title="3 - Defender">3 DEF</button>
+            </div>
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="4" title="4 - Objeto">4 OBJ</button>
+                <button class="tc-btn tc-num" data-key="5" title="5 - Huir">5 HUIR</button>
+                <button class="tc-btn tc-num" data-key="6" title="6 - Habilidades">6 SKILL</button>
+            </div>
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="7">7</button>
+                <button class="tc-btn tc-num" data-key="8">8</button>
+                <button class="tc-btn tc-num" data-key="9">9</button>
+            </div>
+            <div class="tc-row">
+                <button id="btn-enter-combat" class="tc-btn tc-action tc-enter">ENTER</button>
+                <button id="btn-esc-combat" class="tc-btn tc-action tc-esc">ESC</button>
+            </div>
+        </div>
+        <div id="tc-menu" class="tc-section">
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="1">1</button>
+                <button class="tc-btn tc-num" data-key="2">2</button>
+                <button class="tc-btn tc-num" data-key="3">3</button>
+                <button class="tc-btn tc-num" data-key="4">4</button>
+            </div>
+        </div>
+        <div id="tc-inventory" class="tc-section">
+            <div class="tc-row">
+                <button id="btn-tab-inv" class="tc-btn tc-tool">TAB</button>
+                <button id="btn-w-inv" class="tc-btn tc-dir" style="width:44px;height:44px;font-size:16px;">W</button>
+                <button id="btn-s-inv" class="tc-btn tc-dir" style="width:44px;height:44px;font-size:16px;">S</button>
+            </div>
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="1">1</button>
+                <button class="tc-btn tc-num" data-key="2">2</button>
+                <button class="tc-btn tc-num" data-key="3">3</button>
+                <button class="tc-btn tc-num" data-key="4">4</button>
+                <button class="tc-btn tc-num" data-key="5">5</button>
+            </div>
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="6">6</button>
+                <button class="tc-btn tc-num" data-key="7">7</button>
+                <button class="tc-btn tc-num" data-key="8">8</button>
+                <button class="tc-btn tc-num" data-key="9">9</button>
+            </div>
+            <div class="tc-row">
+                <button id="btn-enter-inv" class="tc-btn tc-action tc-enter">ENTER</button>
+                <button id="btn-esc-inv" class="tc-btn tc-action tc-esc">ESC</button>
+            </div>
+        </div>
+        <div id="tc-shop" class="tc-section">
+            <div class="tc-row">
+                <button id="btn-tab-shop" class="tc-btn tc-tool">TAB</button>
+                <button class="tc-btn tc-num" data-key="1">1</button>
+                <button class="tc-btn tc-num" data-key="2">2</button>
+                <button class="tc-btn tc-num" data-key="3">3</button>
+            </div>
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="4">4</button>
+                <button class="tc-btn tc-num" data-key="5">5</button>
+                <button class="tc-btn tc-num" data-key="6">6</button>
+            </div>
+            <div class="tc-row">
+                <button class="tc-btn tc-num" data-key="7">7</button>
+                <button class="tc-btn tc-num" data-key="8">8</button>
+                <button class="tc-btn tc-num" data-key="9">9</button>
+            </div>
+            <div class="tc-row">
+                <button id="btn-enter-shop" class="tc-btn tc-action tc-enter">ENTER</button>
+                <button id="btn-esc-shop" class="tc-btn tc-action tc-esc">ESC</button>
+            </div>
         </div>
     </div>
+    <button id="btn-help" type="button" aria-label="Abrir ayuda de controles">?</button>
+    <section id="controls-help" aria-label="Ayuda del juego">
+        <h2>GUIA DE THE LAST RIDERS</h2>
+        <h3>Exploracion</h3>
+        <p>▲ / ▼: avanzar o retroceder. ◀ / ▶: girar. OK: abrir puertas, cofres y escaleras.</p>
+        <p>I: inventario. F5: guardar. TAB: cambiar panel. Desliza sobre la pantalla para moverte.</p>
+        <h3>Combate por turnos</h3>
+        <p>1 Atacar, 2 Magia, 3 Defender, 4 Objeto, 5 Huir, 6 Habilidades.</p>
+        <p>Primero elige la accion, despues el hechizo u objeto y por ultimo el objetivo. ENTER confirma; ESC vuelve atras.</p>
+        <h3>Progresion</h3>
+        <p>Explora para encontrar cofres, llaves y tiendas. En Inventario puedes consumir objetos y equipar armas o armaduras compatibles con cada clase.</p>
+        <button id="close-help" type="button">VOLVER AL JUEGO</button>
+    </section>
     <script src="vendor/phaser.min.js?v=2"></script>
     <script src="src/data/races.js?v=2"></script>
     <script src="src/data/classes.js?v=2"></script>
@@ -48,6 +198,11 @@
     <script src="src/systems/ParticleManager.js?v=2"></script>
     <script src="src/systems/AudioManager.js?v=2"></script>
     <script src="src/systems/ScreenEffects.js?v=2"></script>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+        window.THREE = THREE;
+    </script>
+    <script src="src/systems/ThreeDungeonView.js?v=1"></script>
     <script src="src/ui/HUD.js?v=2"></script>
     <script src="src/ui/MenuUI.js?v=2"></script>
     <script src="src/ui/UITheme.js?v=2"></script>
@@ -62,11 +217,93 @@
     <script src="src/scenes/InventoryScene.js?v=2"></script>
     <script src="src/main.js?v=2"></script>
     <script>
-        document.getElementById('btn-up').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'w',code:'KeyW'})); });
-        document.getElementById('btn-down').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'s',code:'KeyS'})); });
-        document.getElementById('btn-left').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'a',code:'KeyA'})); });
-        document.getElementById('btn-right').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'d',code:'KeyD'})); });
-        document.getElementById('btn-interact').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:' ',code:'Space'})); });
+        (function() {
+            function isTouchDevice() {
+                return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || matchMedia('(pointer: coarse)').matches;
+            }
+            function isMobileDevice() {
+                return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                    || (isTouchDevice() && screen.width <= 1024);
+            }
+            window.isTouchDevice = isTouchDevice;
+            window.isMobileDevice = isMobileDevice;
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'F5') e.preventDefault();
+            });
+
+            var touchControls = document.getElementById('touch-controls');
+            if (isTouchDevice()) {
+                touchControls.style.display = 'block';
+            }
+
+            var KEY_MAP = {
+                '1': {key:'1',code:'Digit1'}, '2': {key:'2',code:'Digit2'}, '3': {key:'3',code:'Digit3'},
+                '4': {key:'4',code:'Digit4'}, '5': {key:'5',code:'Digit5'}, '6': {key:'6',code:'Digit6'},
+                '7': {key:'7',code:'Digit7'}, '8': {key:'8',code:'Digit8'}, '9': {key:'9',code:'Digit9'}
+            };
+            function fireKey(keyCode) {
+                var event = new KeyboardEvent('keydown', { key: keyCode.key, code: keyCode.code, bubbles: true, cancelable: true });
+                document.dispatchEvent(event);
+            }
+
+            function bindTouch(id, keyCode) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener('pointerdown', function(e) { e.preventDefault(); fireKey(keyCode); });
+            }
+
+            bindTouch('btn-up', {key:'w',code:'KeyW'});
+            bindTouch('btn-down', {key:'s',code:'KeyS'});
+            bindTouch('btn-left', {key:'a',code:'KeyA'});
+            bindTouch('btn-right', {key:'d',code:'KeyD'});
+            bindTouch('btn-interact', {key:' ',code:'Space'});
+
+            bindTouch('btn-i', {key:'i',code:'KeyI'});
+            bindTouch('btn-v', {key:'v',code:'KeyV'});
+            bindTouch('btn-f5', {key:'F5',code:'F5'});
+            bindTouch('btn-tab-explore', {key:'Tab',code:'Tab'});
+
+            var numBtns = document.querySelectorAll('.tc-num[data-key]');
+            for (var i = 0; i < numBtns.length; i++) {
+                numBtns[i].addEventListener('pointerdown', function(e) {
+                    e.preventDefault();
+                    var k = this.getAttribute('data-key');
+                    if (KEY_MAP[k]) fireKey(KEY_MAP[k]);
+                });
+            }
+
+            var enterBtns = ['btn-enter-combat','btn-enter-inv','btn-enter-shop'];
+            enterBtns.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('pointerdown', function(e) { e.preventDefault(); fireKey({key:'Enter',code:'Enter'}); });
+            });
+            var escBtns = ['btn-esc-combat','btn-esc-inv','btn-esc-shop'];
+            escBtns.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.addEventListener('pointerdown', function(e) { e.preventDefault(); fireKey({key:'Escape',code:'Escape'}); });
+            });
+
+            bindTouch('btn-tab-inv', {key:'Tab',code:'Tab'});
+            bindTouch('btn-w-inv', {key:'w',code:'KeyW'});
+            bindTouch('btn-s-inv', {key:'s',code:'KeyS'});
+            bindTouch('btn-tab-shop', {key:'Tab',code:'Tab'});
+
+            var help = document.getElementById('controls-help');
+            document.getElementById('btn-help').addEventListener('pointerdown', function(e) { e.preventDefault(); help.classList.add('visible'); });
+            document.getElementById('close-help').addEventListener('pointerdown', function(e) { e.preventDefault(); help.classList.remove('visible'); });
+
+            var SECTIONS = { explore: 'tc-explore', combat: 'tc-combat', menu: 'tc-menu', inventory: 'tc-inventory', shop: 'tc-shop' };
+            window.setTouchContext = function(ctx) {
+                if (!isTouchDevice()) { touchControls.style.display = 'none'; return; }
+                touchControls.style.display = 'block';
+                var keys = Object.keys(SECTIONS);
+                for (var i = 0; i < keys.length; i++) {
+                    var el = document.getElementById(SECTIONS[keys[i]]);
+                    if (el) el.classList.toggle('active', keys[i] === ctx);
+                }
+            };
+        })();
     </script>
     <script>
         document.fonts.ready.then(function() {

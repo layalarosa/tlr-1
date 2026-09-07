@@ -7,6 +7,8 @@ class MenuScene extends Phaser.Scene {
         var saveSystem = new SaveSystem();
         var g = this.add.graphics();
         var texts = [];
+        var hitAreas = [];
+        var transitioning = false;
         var ui = new UITheme(this);
         var audio = new AudioManager(this);
         audio.playBgm('bgm_menu');
@@ -15,6 +17,8 @@ class MenuScene extends Phaser.Scene {
             g.clear();
             texts.forEach(function(t) { t.destroy(); });
             texts = [];
+            hitAreas.forEach(function(area) { area.destroy(); });
+            hitAreas = [];
         }
 
         var txt = function(x, y, str, style) {
@@ -52,50 +56,54 @@ class MenuScene extends Phaser.Scene {
 
             txt(w / 2, 52, 'THE LAST', { size: '30px', color: '#dd2222', origin: 0.5, stroke: '#660000', strokeThickness: 4, font: 'Press Start 2P' });
             txt(w / 2, 90, 'RIDERS', { size: '30px', color: '#dd2222', origin: 0.5, stroke: '#660000', strokeThickness: 4, font: 'Press Start 2P' });
-            txt(w / 2, 128, 'Los Ultimos Jinetes', { size: '14px', color: '#774444', origin: 0.5, font: 'Share Tech Mono' });
+            txt(w / 2, 128, 'Los Ultimos Jinetes  |  BETA 0.1', { size: '14px', color: '#b47a55', origin: 0.5, font: 'Share Tech Mono' });
 
             ui.separator(g, w / 2 - 140, 178, 280, { color: 0x662222, alpha: 0.5 });
 
             var buttons = [
-                { label: 'Nueva Partida', key: '1', y: 220 },
-                { label: 'Continuar', key: '2', y: 275 },
-                { label: 'Cargar Archivo', key: '3', y: 330 },
-                { label: 'Donar vía PayPal', key: '4', y: 385, paypal: true }
+                { label: 'Nueva Partida', key: '1', y: 215 },
+                { label: 'Continuar', key: '2', y: 263 },
+                { label: 'Cargar Archivo', key: '3', y: 311 },
+                { label: 'Donar vía PayPal', key: '4', y: 359, paypal: true }
             ];
             var self = this;
             buttons.forEach(function(b) {
                 ui.button(g, w / 2 - 130, b.y - 22, 260, 44, {
-                    bgColor: 0x120a1a,
-                    borderColor: 0x443366
+                    bgColor: 0x180b10,
+                    borderColor: 0x63313a
                 });
-                txt(w / 2, b.y, b.key + ' - ' + b.label, { size: '22px', color: '#9988cc', origin: 0.5, font: 'VT323' });
+                var label = txt(w / 2, b.y, b.key + ' - ' + b.label, { size: '22px', color: '#c18b7c', origin: 0.5, font: 'VT323' });
+                var area = self.add.zone(w / 2, b.y, 260, 44).setInteractive({ useHandCursor: true });
+                area.on('pointerover', function() { label.setColor('#ffe0b5'); });
+                area.on('pointerout', function() { label.setColor('#c18b7c'); });
+                area.on('pointerdown', function() { self._menuActions[b.key](); });
+                hitAreas.push(area);
             });
 
-            ui.separator(g, w / 2 - 140, 378, 280, { color: 0x662222, alpha: 0.4 });
+            ui.separator(g, w / 2 - 140, 392, 280, { color: 0x662222, alpha: 0.4 });
 
-            txt(w / 2, 408, 'Usa las teclas 1, 2, 3 o 4', { size: '13px', color: '#553344', origin: 0.5, font: 'Share Tech Mono' });
-            txt(w / 2, 442, 'WASD = Mover  |  SPACE = Interactuar', { size: '12px', color: '#442233', origin: 0.5, font: 'Share Tech Mono' });
+            txt(w / 2, 414, 'Usa las teclas 1, 2, 3 o 4', { size: '13px', color: '#553344', origin: 0.5, font: 'Share Tech Mono' });
+            txt(w / 2, 442, 'W/S = Avanzar  A/D = Girar  Q/E = Lateral  SPACE = Interactuar', { size: '11px', color: '#442233', origin: 0.5, font: 'Share Tech Mono' });
 
-            ui.panel(g, 15, h - 65, 180, 50, { borderColor: 0x333344, bgColor: 0x080810 });
-            txt(25, h - 50, 'v1.0 - AA Quality', { size: '10px', color: '#444455', font: 'Share Tech Mono' });
         }
 
         drawMenu.call(this);
 
+        if (window.setTouchContext) window.setTouchContext('menu');
         var self = this;
-        this.input.keyboard.on('keydown-ONE', function() {
+        function startScene(sceneKey, data) {
+            if (transitioning) return;
+            transitioning = true;
             self.cameras.main.fadeOut(500, 0, 0, 0);
             self.cameras.main.once('camerafadeoutcomplete', function() {
-                self.scene.start('CreatePartyScene');
+                self.scene.start(sceneKey, data);
             });
-        });
-        this.input.keyboard.on('keydown-TWO', function() {
+        }
+        function continueGame() {
+            if (transitioning) return;
             var save = saveSystem.load();
             if (save) {
-                self.cameras.main.fadeOut(500, 0, 0, 0);
-                self.cameras.main.once('camerafadeoutcomplete', function() {
-                    self.scene.start('ExploreScene', { saveData: save });
-                });
+                startScene('ExploreScene', { saveData: save });
             } else {
                 clearAll();
                 g.fillStyle(0x050508);
@@ -105,34 +113,44 @@ class MenuScene extends Phaser.Scene {
                 txt(w / 2, h / 2 + 15, 'Presiona 1 para nueva partida', { size: '14px', color: '#774444', origin: 0.5, font: 'Share Tech Mono' });
                 self.time.delayedCall(2000, function() { drawMenu.call(self); });
             }
-        });
-        this.input.keyboard.on('keydown-THREE', function() {
+        }
+        function importGame() {
+            if (transitioning) return;
             var input = document.createElement('input');
             input.type = 'file';
             input.accept = '.json';
             input.onchange = function(e) {
                 var file = e.target.files[0];
                 if (!file) return;
-                var reader = new FileReader();
-                reader.onload = function(ev) {
-                    try {
-                        var data = JSON.parse(ev.target.result);
-                        localStorage.setItem('the_last_riders_save', JSON.stringify(data));
-                        var loaded = saveSystem.load();
-                        if (loaded) {
-                            self.cameras.main.fadeOut(500, 0, 0, 0);
-                            self.cameras.main.once('camerafadeoutcomplete', function() {
-                                self.scene.start('ExploreScene', { saveData: loaded });
-                            });
-                        }
-                    } catch(err) { alert('Archivo invalido'); }
-                };
-                reader.readAsText(file);
+                saveSystem.importSave(file).then(function() {
+                    var loaded = saveSystem.load();
+                    if (!loaded) throw new Error('No se pudo leer la partida importada');
+                    startScene('ExploreScene', { saveData: loaded });
+                }).catch(function() {
+                    clearAll();
+                    g.fillStyle(0x050508);
+                    g.fillRect(0, 0, w, h);
+                    ui.panel(g, w / 2 - 160, h / 2 - 45, 320, 90, { borderColor: 0x663333 });
+                    txt(w / 2, h / 2 - 15, 'Archivo de partida invalido', { size: '18px', color: '#cc4444', origin: 0.5, font: 'VT323' });
+                    txt(w / 2, h / 2 + 15, 'Elige un archivo .json valido', { size: '14px', color: '#774444', origin: 0.5, font: 'Share Tech Mono' });
+                    self.time.delayedCall(2000, function() { drawMenu.call(self); });
+                });
             };
             input.click();
-        });
-        this.input.keyboard.on('keydown-FOUR', function() {
+        }
+        function donate() {
+            if (transitioning) return;
             window.open('https://www.paypal.com/donate', '_blank');
-        });
+        }
+        this._menuActions = {
+            '1': function() { startScene('CreatePartyScene'); },
+            '2': continueGame,
+            '3': importGame,
+            '4': donate
+        };
+        this.input.keyboard.on('keydown-ONE', this._menuActions['1']);
+        this.input.keyboard.on('keydown-TWO', this._menuActions['2']);
+        this.input.keyboard.on('keydown-THREE', this._menuActions['3']);
+        this.input.keyboard.on('keydown-FOUR', this._menuActions['4']);
     }
 }

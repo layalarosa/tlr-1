@@ -9,6 +9,7 @@ class NarrativeScene extends Phaser.Scene {
         this.inventory = data.inventory;
         this.gold = data.gold;
         this.currentFloor = data.currentFloor;
+        this.storyState = data.storyState;
     }
 
     create() {
@@ -25,6 +26,21 @@ class NarrativeScene extends Phaser.Scene {
         this._drawFrame();
         this._showCurrent();
         this._setupInput();
+        if (window.setTouchContext) window.setTouchContext('explore');
+
+        var self = this;
+        this.input.on('pointerdown', function() {
+            if (self.typing) {
+                if (self.timer) self.timer.remove();
+                self.typing = false;
+                self.displayedChars = self.currentText.length;
+                self.dialogueTxt.setText(self.currentText);
+                self.continueHint.setVisible(true);
+            } else {
+                self.idx++;
+                self._showCurrent();
+            }
+        });
     }
 
     _drawFrame() {
@@ -35,7 +51,7 @@ class NarrativeScene extends Phaser.Scene {
         g.fillRect(0, 0, GAME_W, GAME_H);
 
         this.ui.panel(g, 20, 300, 600, 170, {
-            borderColor: 0x6644aa,
+            borderColor: 0x8e3040,
             bgColor: 0x08080f,
             glowColor: 0x332266,
             cornerRadius: 8
@@ -44,7 +60,7 @@ class NarrativeScene extends Phaser.Scene {
         this.portraitFrame = this.add.graphics().setDepth(58);
 
         this.nameTag = this.add.text(200, 305, '', {
-            fontSize: '14px', fontFamily: '"Share Tech Mono", monospace', color: '#aaaaff',
+            fontSize: '14px', fontFamily: '"Share Tech Mono", monospace', color: '#d8b18b',
             backgroundColor: '#1a1a2e', padding: { x: 8, y: 3 }
         }).setDepth(60);
 
@@ -78,7 +94,7 @@ class NarrativeScene extends Phaser.Scene {
             this.nameTag.setX(200);
             this.dialogueTxt.setX(200).setWordWrapWidth(400);
 
-            this.portraitFrame.lineStyle(2, 0x6644aa);
+            this.portraitFrame.lineStyle(2, 0x8e3040);
             this.portraitFrame.strokeRect(55, 155, 90, 90);
             this.portraitFrame.fillStyle(0x111122, 0.6);
             this.portraitFrame.fillRect(55, 155, 90, 90);
@@ -147,7 +163,8 @@ class NarrativeScene extends Phaser.Scene {
                     party: self.party,
                     inventory: self.inventory,
                     gold: self.gold,
-                    currentFloor: self.currentFloor
+                    currentFloor: self.currentFloor,
+                    storyState: self.storyState
                 });
             }
             self.scene.stop();
@@ -177,6 +194,17 @@ class ChoiceScene extends Phaser.Scene {
 
         this._draw();
         this._input();
+        if (window.setTouchContext) window.setTouchContext('explore');
+
+        var self = this;
+        this.choices.forEach(function(c, i) {
+            var y = 140 + i * 45;
+            var zone = self.add.zone(320, y + 18, 320, 36).setInteractive();
+            zone.on('pointerdown', function() {
+                self.selIdx = i;
+                self._select();
+            });
+        });
     }
 
     _draw() {
@@ -185,7 +213,7 @@ class ChoiceScene extends Phaser.Scene {
         this.g.fillRect(0, 0, GAME_W, GAME_H);
 
         this.ui.panel(this.g, 120, 80, 400, 300, {
-            borderColor: 0x6644aa,
+            borderColor: 0x8e3040,
             bgColor: 0x08080f,
             glowColor: 0x332266,
             cornerRadius: 8
@@ -193,7 +221,7 @@ class ChoiceScene extends Phaser.Scene {
 
         this.ui.titleBar(this.g, 140, 90, 360, this.title, null, {
             bgColor: 0x141430,
-            textColor: '#aaaaff',
+            textColor: '#d8b18b',
             fontSize: '18px'
         });
 
@@ -237,6 +265,7 @@ class ChoiceScene extends Phaser.Scene {
         k.on('keydown-S', function() { self._move(1); });
         k.on('keydown-DOWN', function() { self._move(1); });
         k.on('keydown-ENTER', function() { self._select(); });
+        k.on('keydown-SPACE', function() { self._select(); });
     }
 
     _move(dir) {

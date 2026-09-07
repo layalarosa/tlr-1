@@ -1,4 +1,35 @@
 var NARRATIVE = {
+    storyChapters: {
+        1: { name: 'Los Sotanos Olvidados', objective: 'Encuentra la nota del explorador marcada en el mapa.', accent: '#c58b5c' },
+        2: { name: 'Las Criptas Profundas', objective: 'Descubre que une a los muertos con la torre de Tharion.', accent: '#9ba8c7' },
+        3: { name: 'El Laberinto Elemental', objective: 'Atraviesa el laberinto y recupera el sello elemental.', accent: '#e48b48' },
+        4: { name: 'La Torre del Archimago', objective: 'Reune los testimonios necesarios para enfrentar a Tharion.', accent: '#bd83d1' },
+        5: { name: 'La Cima', objective: 'Decide el destino de Tharion y de la torre.', accent: '#e3c35b' }
+    },
+
+    storyMilestones: {
+        1: [
+            { name: 'La cronista', portrait: 'portrait_placeholder', text: 'La torre no se ha despertado sola. Cada piso que desciendas ha sido preparado para recibirte.' },
+            { name: 'La cronista', portrait: 'portrait_placeholder', text: 'Busca a los exploradores que bajaron antes que vosotros. Sus notas pueden revelar que esta ocurriendo.' }
+        ],
+        3: [
+            { name: 'Voz entre los huesos', portrait: 'portrait_placeholder', text: 'Tharion no fundo esta torre para conquistar el mundo. La construyo para encerrar algo que ya estaba aqui.' },
+            { name: 'Voz entre los huesos', portrait: 'portrait_placeholder', text: 'Si quereis llegar a el, tendreis que decidir que verdad estais dispuestos a conservar.' }
+        ],
+        6: [
+            { name: 'El prisionero', portrait: 'portrait_placeholder', text: 'Los muertos recuerdan cada promesa rota. La torre se alimenta de quienes entran sin un motivo propio.' },
+            { name: 'El prisionero', portrait: 'portrait_placeholder', text: 'No confundais avanzar con ganar. A veces una puerta abierta es la trampa mas profunda.' }
+        ],
+        10: [
+            { name: 'Resonancia elemental', portrait: 'portrait_placeholder', text: 'Fuego y hielo chocan porque alguien intento imponer una sola voluntad sobre ambos.' },
+            { name: 'Resonancia elemental', portrait: 'portrait_placeholder', text: 'El sello que buscais no obedece a la fuerza. Responde a la eleccion que hagais al cruzar este laberinto.' }
+        ],
+        12: [
+            { name: 'Tharion', portrait: 'portrait_placeholder', text: 'Por fin. Habeis llegado lo bastante lejos para escuchar mi version de la historia.' },
+            { name: 'Tharion', portrait: 'portrait_placeholder', text: 'Subid hasta la cima. Alli descubrireis si sois los ultimos heroes... o la ultima llave.' }
+        ]
+    },
+
     floorDescriptions: {
         1: ['El aire huele a humedad y podredumbre. Goteras caen en silencio.', 'Paredes cubiertas de musgo negro. Algo se arrastra en la oscuridad.', 'El suelo está resbaladizo. Huellas antiguas marcan el camino.'],
         2: ['Grietas en las paredes revelan huesos incrustados en la piedra.', 'Un eco lejano resuena como susurros de almas perdidas.', 'La luz de tu antorcha revela runas grabadas en el suelo.'],
@@ -136,6 +167,40 @@ function getFloorDescription(floor) {
     var descs = NARRATIVE.floorDescriptions[floor];
     if (!descs) return '';
     return pickRandom(descs);
+}
+
+function createStoryState() {
+    return {
+        chapter: 1,
+        objective: NARRATIVE.storyChapters[1].objective,
+        flags: {},
+        choices: [],
+        seenMilestones: {}
+    };
+}
+
+function getStoryChapter(floor) {
+    if (floor >= 15) return 5;
+    if (floor >= 12) return 4;
+    if (floor >= 8) return 3;
+    if (floor >= 4) return 2;
+    return 1;
+}
+
+function updateStoryForFloor(storyState, floor) {
+    var chapter = getStoryChapter(floor);
+    var chapterData = NARRATIVE.storyChapters[chapter];
+    storyState.chapter = chapter;
+    if (chapter === 1 && storyState.flags.foundExplorerClue) {
+        storyState.objective = 'Pista encontrada. Sigue la ruta hasta la escalera.';
+    } else {
+        storyState.objective = chapterData.objective;
+    }
+    return chapterData;
+}
+
+function getStoryMilestone(floor) {
+    return NARRATIVE.storyMilestones[floor] || null;
 }
 
 function getShopDialogue(state) {

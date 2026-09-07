@@ -1,36 +1,41 @@
 class GameOverScene extends Phaser.Scene {
     constructor() { super({ key: 'GameOverScene' }); }
 
+    init(data) {
+        this.victory = data && data.victory === true;
+    }
+
     create() {
         this.cameras.main.fadeIn(800, 0, 0, 0);
+        if (window.setTouchContext) window.setTouchContext('menu');
         var w = GAME_W, h = GAME_H;
         var g = this.add.graphics();
         var ui = new UITheme(this);
 
-        g.fillStyle(0x080000);
+        g.fillStyle(this.victory ? 0x0b120d : 0x080306);
         g.fillRect(0, 0, w, h);
 
         for (var i = 0; i < 30; i++) {
-            g.fillStyle(0x0a0000, 0.3);
+            g.fillStyle(this.victory ? 0x182516 : 0x1b080d, 0.3);
             g.fillRect(0, i * 16, w, 1);
         }
 
         ui.panel(g, w / 2 - 180, h / 3 - 60, 360, 180, {
-            borderColor: 0x662222,
-            bgColor: 0x0a0000,
-            glowColor: 0x441111
+            borderColor: this.victory ? 0x668f54 : 0x8e3040,
+            bgColor: this.victory ? 0x101b12 : 0x16070b,
+            glowColor: this.victory ? 0x31572c : 0x591522
         });
 
         ui.separator(g, w / 2 - 140, h / 3 - 35, 280, { color: 0x662222, alpha: 0.5 });
 
-        this.add.text(w / 2, h / 3 - 15, 'GAME OVER', {
-            fontSize: '32px', fontFamily: '"Press Start 2P", monospace', color: '#ff2222',
-            stroke: '#660000', strokeThickness: 3
+        this.add.text(w / 2, h / 3 - 15, this.victory ? 'VICTORIA' : 'GAME OVER', {
+            fontSize: '32px', fontFamily: '"Press Start 2P", monospace', color: this.victory ? '#44ff88' : '#ff2222',
+            stroke: this.victory ? '#116633' : '#660000', strokeThickness: 3
         }).setOrigin(0.5);
 
         this.add.text(w / 2, h / 3 + 25, 'Tu grupo ha caido...', {
-            fontSize: '18px', fontFamily: '"VT323", monospace', color: '#886666'
-        }).setOrigin(0.5);
+            fontSize: '18px', fontFamily: '"VT323", monospace', color: this.victory ? '#88ccaa' : '#886666'
+        }).setText(this.victory ? 'Tharion II ha sido derrotado.' : 'Tu grupo ha caido...').setOrigin(0.5);
 
         ui.separator(g, w / 2 - 140, h / 3 + 55, 280, { color: 0x662222, alpha: 0.4 });
 

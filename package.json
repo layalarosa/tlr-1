@@ -4,11 +4,13 @@
   "description": "Dungeon crawler RPG - First Person Grid-Based",
   "main": "src/main.js",
   "scripts": {
-    "start": "npx serve .",
+    "start": "npx serve . -l 3000",
+    "dev": "npx serve . -l 3000",
     "build": "echo 'Static site - no build step required'"
   },
   "dependencies": {
-    "phaser": "^3.80.1"
+    "phaser": "^3.80.1",
+    "three": "^0.159.0"
   },
   "devDependencies": {
     "serve": "^14.2.0"

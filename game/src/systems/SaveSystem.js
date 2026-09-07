@@ -14,6 +14,14 @@ class SaveSystem {
             timestamp: Date.now(),
             party: gameState.party.map(c => c.toSaveData()),
             inventory: gameState.inventory,
+            customItems: gameState.party.reduce(function(items, character) {
+                Object.keys(character.equipment || {}).forEach(function(slot) {
+                    var itemId = character.equipment[slot];
+                    var item = itemId ? getCustomItem(itemId) : null;
+                    if (item && !items.some(function(saved) { return saved.id === item.id; })) items.push(item);
+                });
+                return items;
+            }, []),
             gold: gameState.gold,
             dungeon: {
                 floor: gameState.floor,
@@ -22,6 +30,7 @@ class SaveSystem {
                 playerDir: gameState.playerDir,
                 maps: gameState.maps
             },
+            storyState: gameState.storyState || createStoryState(),
             playTime: gameState.playTime,
             settings: gameState.settings
         };
@@ -34,12 +43,39 @@ class SaveSystem {
         if (!raw) return null;
         try {
             const data = JSON.parse(raw);
+            if (!this.isValidSaveData(data)) return null;
+            this._restoreCustomItems(data);
             data.party = data.party.map(d => Character.fromSaveData(d));
             return data;
         } catch (e) {
             console.error('Error loading save:', e);
             return null;
         }
+    }
+
+    isValidSaveData(data) {
+        if (!data || !Array.isArray(data.party) || data.party.length === 0 || !data.dungeon) return false;
+        if (!Number.isInteger(data.dungeon.floor) || data.dungeon.floor < 1 || data.dungeon.floor > 15 || !Number.isFinite(data.dungeon.playerX) || !Number.isFinite(data.dungeon.playerY)) return false;
+        if (!data.dungeon.maps || typeof data.dungeon.maps !== 'object' || Array.isArray(data.dungeon.maps)) return false;
+        var map = data.dungeon.maps[data.dungeon.floor];
+        if (!map || !Number.isInteger(map.width) || !Number.isInteger(map.height) || !Array.isArray(map.map) || map.map.length !== map.height) return false;
+        if (data.dungeon.playerX < 0 || data.dungeon.playerX >= map.width || data.dungeon.playerY < 0 || data.dungeon.playerY >= map.height) return false;
+        if (!Array.isArray(data.inventory) || !Number.isFinite(data.gold)) return false;
+        if (data.storyState !== undefined && (!Number.isInteger(data.storyState.chapter) || typeof data.storyState.objective !== 'string' || !data.storyState.flags || !data.storyState.seenMilestones)) return false;
+        for (var i = 0; i < data.party.length; i++) {
+            var character = data.party[i];
+            if (!character || !character.name || !RACES[character.raceId] || !CLASSES[character.classId] || !ALIGNMENTS[character.alignmentId]) return false;
+        }
+        return true;
+    }
+
+    _restoreCustomItems(data) {
+        (data.customItems || []).forEach(function(item) {
+            if (item && item.id) registerCustomItem(item);
+        });
+        data.inventory.forEach(function(entry) {
+            if (entry && entry.customItem && entry.customItem.id) registerCustomItem(entry.customItem);
+        });
     }
 
     deleteSave() {
@@ -67,27 +103,19 @@ class SaveSystem {
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (!data.party || !Array.isArray(data.party) || data.party.length === 0) {
-                        reject(new Error('Formato de guardado invalido: sin grupo'));
+                    if (!this.isValidSaveData(data)) {
+                        reject(new Error('Formato de guardado invalido'));
                         return;
                     }
-                    if (!data.dungeon || typeof data.dungeon.floor !== 'number') {
-                        reject(new Error('Formato de guardado invalido: sin datos de mazmorra'));
-                        return;
-                    }
-                    for (var i = 0; i < data.party.length; i++) {
-                        var c = data.party[i];
-                        if (!c.name || !c.raceId || !c.classId) {
-                            reject(new Error('Formato de guardado invalido: personaje corrupto'));
-                            return;
-                        }
-                    }
+                    this._restoreCustomItems(data);
+                    data.party.forEach(function(character) { Character.fromSaveData(character); });
                     localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
                     resolve(true);
                 } catch (err) {
                     reject(err);
                 }
             };
+            reader.onerror = () => reject(new Error('No se pudo leer el archivo de guardado'));
             reader.readAsText(file);
         });
     }

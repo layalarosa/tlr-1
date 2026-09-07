@@ -16,8 +16,10 @@ class InventoryScene extends Phaser.Scene {
         this.tab = 'items';
         this.selIdx = 0;
         this.selMember = 0;
+        this.selEquipIdx = 0;
         this._draw();
         this._input();
+        if (window.setTouchContext) window.setTouchContext('inventory');
     }
 
     _clear() { this.group.clear(true, true); }
@@ -68,7 +70,7 @@ class InventoryScene extends Phaser.Scene {
         tabs.forEach(function(tab) {
             var active = self.tab === tab.state;
             self.ui.button(self.g, tab.x, 72, 85, 22, { active: active, bgColor: 0x0a0a18, borderColor: 0x333388 });
-            self._txt(tab.x + 42, 75, tab.label, { size: '11px', color: active ? '#aaaaff' : '#555577', origin: 0.5 });
+            self._txt(tab.x + 42, 75, tab.label, { size: '11px', color: active ? '#d49a52' : '#6e4b4f', origin: 0.5 });
         });
 
         if (this.tab === 'items') this._drawItems();
@@ -81,7 +83,7 @@ class InventoryScene extends Phaser.Scene {
 
     _drawItems() {
         var self = this;
-        this._txt(30, 95, '> ITEMS:', { size: '13px', color: '#aaaaff' });
+        this._txt(30, 95, '> ITEMS:', { size: '13px', color: '#d49a52' });
 
         var itemIcons = {
             POTION: 'item_potion', HI_POTION: 'item_hi_potion', ETHER: 'item_ether',
@@ -129,7 +131,7 @@ class InventoryScene extends Phaser.Scene {
 
     _drawEquip() {
         var self = this;
-        this._txt(30, 95, 'EQUIPO:', { size: '13px', color: '#aaaaff' });
+        this._txt(30, 95, 'EQUIPO:', { size: '13px', color: '#d49a52' });
 
         var classPortraits = {
             warrior: 'portrait_warrior', mage: 'portrait_mage',
@@ -137,11 +139,11 @@ class InventoryScene extends Phaser.Scene {
         };
 
         this.party.forEach(function(c, i) {
-            var y = 115 + i * 85;
+            var y = 110 + i * 76;
             var selected = i === self.selMember;
 
-            self.ui.panel(self.g, 40, y, 560, 80, {
-                borderColor: selected ? 0x6644aa : 0x222244,
+            self.ui.panel(self.g, 40, y, 560, 70, {
+                borderColor: selected ? 0x8e3040 : 0x3b2028,
                 bgColor: selected ? 0x0c0c18 : 0x08080f,
                 cornerRadius: 6
             });
@@ -176,6 +178,15 @@ class InventoryScene extends Phaser.Scene {
             self.ui.hpBar(self.g, 400, y + 42, 100, 8, hpPct);
             self.ui.mpBar(self.g, 400, y + 56, 100, 8, mpPct);
         });
+
+        var equipment = this._getEquipmentItems();
+        this._txt(30, 425, 'EQUIPAR (miembro ' + (this.selMember + 1) + '):', { size: '11px', color: '#d49a52' });
+        if (equipment.length === 0) {
+            this._txt(205, 425, 'No hay armas ni armaduras', { size: '10px', color: '#555566' });
+        } else {
+            var selected = equipment[this.selEquipIdx];
+            this._txt(205, 425, '[' + (this.selEquipIdx + 1) + '] ' + selected.item.name + '  ENTER=usar', { size: '10px', color: '#44ff44' });
+        }
     }
 
     _findCustomItem(itemId) {
@@ -183,9 +194,16 @@ class InventoryScene extends Phaser.Scene {
         return inv ? inv.customItem : null;
     }
 
+    _getEquipmentItems() {
+        return this.inventory.map(function(inv) {
+            var item = inv.customItem || ITEMS[inv.itemId];
+            return item && (item.type === 'weapon' || item.type === 'armor') ? { inv: inv, item: item } : null;
+        }).filter(Boolean);
+    }
+
     _drawStatus() {
         var self = this;
-        this._txt(30, 95, 'ESTADO DEL GRUPO:', { size: '13px', color: '#aaaaff' });
+        this._txt(30, 95, 'ESTADO DEL GRUPO:', { size: '13px', color: '#d49a52' });
 
         this.party.forEach(function(c, i) {
             var y = 115 + i * 85;
@@ -227,7 +245,7 @@ class InventoryScene extends Phaser.Scene {
             bgColor: 0x0a0606,
             cornerRadius: 6
         });
-        this._txt(60, 135, 'Cerrar inventario y volver a explorar.', { size: '13px', color: '#aaaaff' });
+        this._txt(60, 135, 'Cerrar inventario y volver a explorar.', { size: '13px', color: '#c18b7c' });
         this._txt(60, 155, 'ENTER o ESC para salir', { size: '12px', color: '#44ff44' });
     }
 
@@ -258,7 +276,7 @@ class InventoryScene extends Phaser.Scene {
             } else if (self.tab === 'items') {
                 self._useItem();
             } else if (self.tab === 'equip') {
-                self._cycleMember();
+                self._equipSelected();
             }
         });
         this.input.keyboard.on('keydown-W', function() {
@@ -284,7 +302,8 @@ class InventoryScene extends Phaser.Scene {
         for (var n = 1; n <= 9; n++) {
             (function(num, keyName) {
                 self.input.keyboard.on('keydown-' + keyName, function() {
-                    self.selIdx = num - 1;
+                    if (self.tab === 'equip') self.selEquipIdx = num - 1;
+                    else self.selIdx = num - 1;
                     self._draw();
                 });
             })(n, keyNames[n - 1]);
@@ -338,6 +357,30 @@ class InventoryScene extends Phaser.Scene {
 
     _cycleMember() {
         this.selMember = (this.selMember + 1) % this.party.length;
+        this._draw();
+    }
+
+    _equipSelected() {
+        var equipment = this._getEquipmentItems();
+        var selected = equipment[this.selEquipIdx];
+        var character = this.party[this.selMember];
+        if (!selected || !character) return;
+        var item = selected.item;
+        if (item.classes && item.classes.indexOf(character.classData.id) === -1) {
+            this._txt(320, 445, 'Clase incompatible', { size: '10px', color: '#ff4444' });
+            return;
+        }
+        if (!AlignmentSystem.canEquipItem(character, item.id)) {
+            this._txt(320, 445, 'Alineacion incompatible', { size: '10px', color: '#ff4444' });
+            return;
+        }
+        var slot = item.slot;
+        var previous = character.equipment[slot];
+        character.equipment[slot] = item.id;
+        selected.inv.quantity--;
+        if (selected.inv.quantity <= 0) this.inventory = this.inventory.filter(function(inv) { return inv !== selected.inv; });
+        if (previous) this.inventory.push({ itemId: previous, quantity: 1, customItem: getCustomItem(previous) || undefined });
+        this.selEquipIdx = 0;
         this._draw();
     }
 }

@@ -19,11 +19,12 @@ class Enemy {
         this.name = variant.prefix + template.name;
 
         const levelMod = 1 + (floorLevel - 1) * 0.1;
-        this.maxHp = Math.floor((template.hp + variant.hpMod) * levelMod);
+        const threatMod = 1.12 + (floorLevel - 1) * 0.015;
+        this.maxHp = Math.floor((template.hp + variant.hpMod) * levelMod * threatMod);
         this.hp = this.maxHp;
-        this.atk = Math.floor((template.atk + variant.atkMod) * levelMod);
-        this.def = Math.floor((template.def + variant.defMod) * levelMod);
-        this.magDef = Math.floor((template.magDef || Math.floor(template.def * 0.6)) * levelMod);
+        this.atk = Math.floor((template.atk + variant.atkMod) * levelMod * threatMod);
+        this.def = Math.floor((template.def + variant.defMod) * levelMod * threatMod);
+        this.magDef = Math.floor((template.magDef || Math.floor(template.def * 0.6)) * levelMod * threatMod);
         this.exp = Math.floor(template.exp * levelMod * (variant.prefix ? 1.1 : 1));
         this.gold = Math.floor(template.gold * levelMod * (variant.prefix ? 1.15 : 1));
         this.sprite = template.sprite;
@@ -91,7 +92,7 @@ class Enemy {
             if (healSkill.length > 0) return 'drain_life';
         }
 
-        var skillChance = 0.35;
+        var skillChance = this.boss ? 0.5 : 0.45;
         if (rng < skillChance && this.skills.length > 0) {
             return this.skills[Math.floor(Math.random() * this.skills.length)];
         }
