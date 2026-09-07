@@ -950,8 +950,7 @@ class CombatScene extends Phaser.Scene {
             this.audio.stopBgm();
             this.cameras.main.fadeOut(500, 0, 0, 0);
             this.cameras.main.once('camerafadeoutcomplete', function() {
-                self.scene.stop();
-                self.onDefeat();
+                self.scene.start('GameOverScene', { victory: false });
             });
             return;
         }

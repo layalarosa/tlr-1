@@ -145,10 +145,10 @@ var NARRATIVE = {
     ],
 
     floorTransition: [
-        'Las escaleras descienden a la oscuridad.',
+        'Las escaleras suben hacia la oscuridad.',
         'Un nuevo piso te espera. El peligro aumenta.',
-        'Bajas las escaleras. El aire se vuelve más denso.',
-        'El camino continúa hacia abajo. No hay vuelta atrás.',
+        'Subes las escaleras. El aire se vuelve más denso.',
+        'El camino continúa hacia arriba. No hay vuelta atrás.',
         'Una puerta se abre al piso {floor}.'
     ],
 

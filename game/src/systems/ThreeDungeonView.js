@@ -51,6 +51,7 @@ class ThreeDungeonView {
         this._hasCamera = false;
         this._animationFrame = null;
         this._animating = false;
+        this._mapRenderKey = null;
 
         this.floorLayer = new THREE.Group();
         this.wallLayer = new THREE.Group();
@@ -104,46 +105,50 @@ class ThreeDungeonView {
         this._renderCamera();
     }
 
-    render(map, px, py, pdir) {
+    render(map, px, py, pdir, onComplete) {
         if (!this._ready) return;
-        this._clear(this.floorLayer);
-        this._clear(this.wallLayer);
-        this._clear(this.detailLayer);
+        var mapRenderKey = this._getMapRenderKey(map);
+        if (mapRenderKey !== this._mapRenderKey) {
+            this._mapRenderKey = mapRenderKey;
+            this._clear(this.floorLayer);
+            this._clear(this.wallLayer);
+            this._clear(this.detailLayer);
 
-        var floorMaterial = new THREE.MeshLambertMaterial({ color: 0x565249 });
-        var wallMaterial = new THREE.MeshLambertMaterial({ color: 0x4a4942 });
-        var darkWallMaterial = new THREE.MeshLambertMaterial({ color: 0x242522 });
-        var ceilingMaterial = new THREE.MeshLambertMaterial({ color: 0x161714, side: THREE.BackSide });
-        var floorGeometry = new THREE.BoxGeometry(1, 0.08, 1);
-        var wallGeometry = new THREE.BoxGeometry(1, 1.8, 1);
-        var ceilingGeometry = new THREE.PlaneGeometry(map.width, map.height);
+            var floorMaterial = new THREE.MeshLambertMaterial({ color: 0x565249 });
+            var wallMaterial = new THREE.MeshLambertMaterial({ color: 0x4a4942 });
+            var darkWallMaterial = new THREE.MeshLambertMaterial({ color: 0x242522 });
+            var ceilingMaterial = new THREE.MeshLambertMaterial({ color: 0x161714, side: THREE.BackSide });
+            var floorGeometry = new THREE.BoxGeometry(1, 0.08, 1);
+            var wallGeometry = new THREE.BoxGeometry(1, 1.8, 1);
+            var ceilingGeometry = new THREE.PlaneGeometry(map.width, map.height);
 
-        var ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
-        ceiling.rotation.x = Math.PI / 2;
-        ceiling.position.set(map.width / 2, 1.85, map.height / 2);
-        this.floorLayer.add(ceiling);
+            var ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.set(map.width / 2, 1.85, map.height / 2);
+            this.floorLayer.add(ceiling);
 
-        for (var y = 0; y < map.height; y++) {
-            for (var x = 0; x < map.width; x++) {
-                var tile = map.map[y][x];
-                var centerX = x + 0.5;
-                var centerZ = y + 0.5;
+            for (var y = 0; y < map.height; y++) {
+                for (var x = 0; x < map.width; x++) {
+                    var tile = map.map[y][x];
+                    var centerX = x + 0.5;
+                    var centerZ = y + 0.5;
 
-                if (tile.type === 'wall') {
-                    var wall = new THREE.Mesh(wallGeometry, tile.explored ? wallMaterial : darkWallMaterial);
-                    wall.position.set(centerX, 0.9, centerZ);
-                    this.wallLayer.add(wall);
-                    continue;
+                    if (tile.type === 'wall') {
+                        var wall = new THREE.Mesh(wallGeometry, tile.explored ? wallMaterial : darkWallMaterial);
+                        wall.position.set(centerX, 0.9, centerZ);
+                        this.wallLayer.add(wall);
+                        continue;
+                    }
+
+                    var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+                    floor.position.set(centerX, 0, centerZ);
+                    this.floorLayer.add(floor);
+
+                    if (tile.type === 'door') this._addDoor(centerX, centerZ, tile.locked);
+                    if (tile.type === 'stairs') this._addStairs(centerX, centerZ);
+                    if (tile.type === 'shop') this._addMarker(centerX, centerZ, 0xd1b47a);
+                    if (tile.chest && !tile.chestOpen) this._addChest(centerX, centerZ);
                 }
-
-                var floor = new THREE.Mesh(floorGeometry, floorMaterial);
-                floor.position.set(centerX, 0, centerZ);
-                this.floorLayer.add(floor);
-
-                if (tile.type === 'door') this._addDoor(centerX, centerZ, tile.locked);
-                if (tile.type === 'stairs') this._addStairs(centerX, centerZ);
-                if (tile.type === 'shop') this._addMarker(centerX, centerZ, 0xd1b47a);
-                if (tile.chest && !tile.chestOpen) this._addChest(centerX, centerZ);
             }
         }
 
@@ -170,13 +175,14 @@ class ThreeDungeonView {
         this._hasCamera = true;
 
         if (shouldAnimate) {
-            this._animateCamera(fromX, fromZ, targetX, targetZ, targetRotation);
+            this._animateCamera(fromX, fromZ, targetX, targetZ, targetRotation, onComplete);
         } else {
             this.renderer.render(this.world, this.camera);
+            if (onComplete) onComplete();
         }
     }
 
-    _animateCamera(fromX, fromZ, targetX, targetZ, targetRotation) {
+    _animateCamera(fromX, fromZ, targetX, targetZ, targetRotation, onComplete) {
         if (this._animationFrame) cancelAnimationFrame(this._animationFrame);
         this._animating = true;
         var start = performance.now();
@@ -195,9 +201,21 @@ class ThreeDungeonView {
             } else {
                 self._animationFrame = null;
                 self._animating = false;
+                if (onComplete) onComplete();
             }
         }
         this._animationFrame = requestAnimationFrame(tick);
+    }
+
+    _getMapRenderKey(map) {
+        var key = map.width + 'x' + map.height + ':';
+        for (var y = 0; y < map.height; y++) {
+            for (var x = 0; x < map.width; x++) {
+                var tile = map.map[y][x];
+                key += tile.type + (tile.locked ? '1' : '0') + (tile.explored ? '1' : '0') + (tile.visible ? '1' : '0') + (tile.chest && !tile.chestOpen ? '1' : '0') + ';';
+            }
+        }
+        return key;
     }
 
     _renderCamera() {

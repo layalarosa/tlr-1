@@ -56,15 +56,17 @@ class MenuScene extends Phaser.Scene {
 
             txt(w / 2, 52, 'THE LAST', { size: '30px', color: '#dd2222', origin: 0.5, stroke: '#660000', strokeThickness: 4, font: 'Press Start 2P' });
             txt(w / 2, 90, 'RIDERS', { size: '30px', color: '#dd2222', origin: 0.5, stroke: '#660000', strokeThickness: 4, font: 'Press Start 2P' });
-            txt(w / 2, 128, 'Los Ultimos Jinetes  |  BETA 0.1', { size: '14px', color: '#b47a55', origin: 0.5, font: 'Share Tech Mono' });
+            txt(w / 2, 128, 'Los Ultimos Jinetes  |  BETA 0.2', { size: '14px', color: '#b47a55', origin: 0.5, font: 'Share Tech Mono' });
 
             ui.separator(g, w / 2 - 140, 178, 280, { color: 0x662222, alpha: 0.5 });
 
             var buttons = [
-                { label: 'Nueva Partida', key: '1', y: 215 },
-                { label: 'Continuar', key: '2', y: 263 },
-                { label: 'Cargar Archivo', key: '3', y: 311 },
-                { label: 'Donar vía PayPal', key: '4', y: 359, paypal: true }
+                { label: 'Nueva Partida', key: '1', y: 190 },
+                { label: 'Continuar', key: '2', y: 232 },
+                { label: 'Cargar Archivo', key: '3', y: 274 },
+                { label: 'Exportar Guardado', key: '4', y: 316 },
+                { label: 'Borrar Guardado', key: '5', y: 358 },
+                { label: 'Donar vía PayPal', key: '6', y: 400, paypal: true }
             ];
             var self = this;
             buttons.forEach(function(b) {
@@ -82,8 +84,8 @@ class MenuScene extends Phaser.Scene {
 
             ui.separator(g, w / 2 - 140, 392, 280, { color: 0x662222, alpha: 0.4 });
 
-            txt(w / 2, 414, 'Usa las teclas 1, 2, 3 o 4', { size: '13px', color: '#553344', origin: 0.5, font: 'Share Tech Mono' });
-            txt(w / 2, 442, 'W/S = Avanzar  A/D = Girar  Q/E = Lateral  SPACE = Interactuar', { size: '11px', color: '#442233', origin: 0.5, font: 'Share Tech Mono' });
+            txt(w / 2, 430, 'Usa las teclas 1-6', { size: '13px', color: '#553344', origin: 0.5, font: 'Share Tech Mono' });
+            txt(w / 2, 448, 'W/S = Avanzar  A/D = Girar  Q/E = Lateral  SPACE = Interactuar', { size: '11px', color: '#442233', origin: 0.5, font: 'Share Tech Mono' });
 
         }
 
@@ -138,6 +140,52 @@ class MenuScene extends Phaser.Scene {
             };
             input.click();
         }
+        function exportGame() {
+            if (transitioning) return;
+            var save = saveSystem.load();
+            if (!save) {
+                clearAll();
+                g.fillStyle(0x050508);
+                g.fillRect(0, 0, w, h);
+                ui.panel(g, w / 2 - 180, h / 2 - 50, 360, 100, { borderColor: 0x663333 });
+                txt(w / 2, h / 2 - 15, 'No hay ninguna partida guardada', { size: '18px', color: '#cc4444', origin: 0.5, font: 'VT323' });
+                txt(w / 2, h / 2 + 20, 'Guarda primero la aventura para exportarla', { size: '13px', color: '#774444', origin: 0.5, font: 'Share Tech Mono' });
+                self.time.delayedCall(2200, function() { drawMenu.call(self); });
+                return;
+            }
+            saveSystem.exportSave();
+            clearAll();
+            g.fillStyle(0x050508);
+            g.fillRect(0, 0, w, h);
+            ui.panel(g, w / 2 - 150, h / 2 - 45, 300, 90, { borderColor: 0x336633 });
+            txt(w / 2, h / 2 - 15, 'Guardado exportado', { size: '18px', color: '#88dd88', origin: 0.5, font: 'VT323' });
+            txt(w / 2, h / 2 + 15, 'Archivo JSON descargado', { size: '13px', color: '#aadabb', origin: 0.5, font: 'Share Tech Mono' });
+            self.time.delayedCall(1800, function() { drawMenu.call(self); });
+        }
+        function deleteSave() {
+            if (transitioning) return;
+            var save = saveSystem.load();
+            if (!save) {
+                clearAll();
+                g.fillStyle(0x050508);
+                g.fillRect(0, 0, w, h);
+                ui.panel(g, w / 2 - 160, h / 2 - 45, 320, 90, { borderColor: 0x663333 });
+                txt(w / 2, h / 2 - 15, 'No hay guardado que borrar', { size: '18px', color: '#cc4444', origin: 0.5, font: 'VT323' });
+                txt(w / 2, h / 2 + 15, 'La aventura aún no se ha guardado', { size: '13px', color: '#774444', origin: 0.5, font: 'Share Tech Mono' });
+                self.time.delayedCall(1800, function() { drawMenu.call(self); });
+                return;
+            }
+            var confirmed = window.confirm('¿Seguro que quieres borrar la partida guardada?');
+            if (!confirmed) return;
+            saveSystem.deleteSave();
+            clearAll();
+            g.fillStyle(0x050508);
+            g.fillRect(0, 0, w, h);
+            ui.panel(g, w / 2 - 160, h / 2 - 45, 320, 90, { borderColor: 0x663333 });
+            txt(w / 2, h / 2 - 15, 'Partida borrada', { size: '18px', color: '#cc4444', origin: 0.5, font: 'VT323' });
+            txt(w / 2, h / 2 + 15, 'Puedes empezar una nueva aventura', { size: '13px', color: '#774444', origin: 0.5, font: 'Share Tech Mono' });
+            self.time.delayedCall(1800, function() { drawMenu.call(self); });
+        }
         function donate() {
             if (transitioning) return;
             window.open('https://www.paypal.com/donate', '_blank');
@@ -146,11 +194,15 @@ class MenuScene extends Phaser.Scene {
             '1': function() { startScene('CreatePartyScene'); },
             '2': continueGame,
             '3': importGame,
-            '4': donate
+            '4': exportGame,
+            '5': deleteSave,
+            '6': donate
         };
         this.input.keyboard.on('keydown-ONE', this._menuActions['1']);
         this.input.keyboard.on('keydown-TWO', this._menuActions['2']);
         this.input.keyboard.on('keydown-THREE', this._menuActions['3']);
         this.input.keyboard.on('keydown-FOUR', this._menuActions['4']);
+        this.input.keyboard.on('keydown-FIVE', this._menuActions['5']);
+        this.input.keyboard.on('keydown-SIX', this._menuActions['6']);
     }
 }

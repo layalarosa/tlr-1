@@ -4,8 +4,8 @@
   "description": "Dungeon crawler RPG - First Person Grid-Based",
   "main": "src/main.js",
   "scripts": {
-    "start": "npx serve . -l 3000",
-    "dev": "npx serve . -l 3000",
+    "start": "node server.js",
+    "dev": "node server.js",
     "build": "echo 'Static site - no build step required'"
   },
   "dependencies": {

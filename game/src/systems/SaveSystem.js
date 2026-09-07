@@ -9,12 +9,13 @@ class SaveSystem {
     }
 
     save(gameState) {
+        const party = Array.isArray(gameState.party) ? gameState.party : [];
         const data = {
-            version: '1.0',
+            version: '1.1',
             timestamp: Date.now(),
-            party: gameState.party.map(c => c.toSaveData()),
-            inventory: gameState.inventory,
-            customItems: gameState.party.reduce(function(items, character) {
+            party: party.map(c => c.toSaveData()),
+            inventory: Array.isArray(gameState.inventory) ? gameState.inventory : [],
+            customItems: party.reduce(function(items, character) {
                 Object.keys(character.equipment || {}).forEach(function(slot) {
                     var itemId = character.equipment[slot];
                     var item = itemId ? getCustomItem(itemId) : null;
@@ -22,17 +23,17 @@ class SaveSystem {
                 });
                 return items;
             }, []),
-            gold: gameState.gold,
+            gold: Number.isFinite(gameState.gold) ? gameState.gold : 0,
             dungeon: {
-                floor: gameState.floor,
-                playerX: gameState.playerX,
-                playerY: gameState.playerY,
-                playerDir: gameState.playerDir,
-                maps: gameState.maps
+                floor: Number.isInteger(gameState.floor) ? gameState.floor : 1,
+                playerX: Number.isFinite(gameState.playerX) ? gameState.playerX : 0,
+                playerY: Number.isFinite(gameState.playerY) ? gameState.playerY : 0,
+                playerDir: Number.isInteger(gameState.playerDir) ? gameState.playerDir : 0,
+                maps: gameState.maps || {}
             },
             storyState: gameState.storyState || createStoryState(),
-            playTime: gameState.playTime,
-            settings: gameState.settings
+            playTime: Number.isFinite(gameState.playTime) ? gameState.playTime : 0,
+            settings: gameState.settings || this.loadSettings()
         };
         localStorage.setItem(this.SAVE_KEY, JSON.stringify(data));
         return true;

@@ -36,6 +36,7 @@ class ExploreScene extends Phaser.Scene {
             this.py = this.maps[this.currentFloor].playerStart.y;
         }
         this._ensureStoryTarget();
+        this._repairLoadedMap();
 
         this.encounterRate = 0.1;
         this.moving = false;
@@ -187,15 +188,16 @@ class ExploreScene extends Phaser.Scene {
     }
 
     _afterMove() {
+        var self = this;
         this._reveal();
         var tileAction = this._checkTile();
-        this._draw();
+        this._draw(function() {
+            self.moving = false;
+            if (!tileAction && Math.random() < self.encounterRate) self._encounter();
+        });
         this._updateHUD();
         this.playTime++;
-        this.moving = false;
         this._playSound('sfx_step');
-        if (tileAction) return;
-        if (Math.random() < this.encounterRate) this._encounter();
     }
 
     _checkTile() {
@@ -206,7 +208,7 @@ class ExploreScene extends Phaser.Scene {
             this._trap(t.trapType);
         }
         if (t.type === 'stairs') {
-            this._msg('Has encontrado la escalera. SPACE/ENTER para bajar al siguiente piso.');
+            this._msg('Has encontrado las escaleras. SPACE/ENTER para subir al siguiente piso.');
             return true;
         }
         if (t.type === 'shop') { this._enterShop(); return true; }
@@ -225,6 +227,20 @@ class ExploreScene extends Phaser.Scene {
                 }
             }
         }
+    }
+
+    _repairLoadedMap() {
+        var map = this.maps[this.currentFloor];
+        if (!map) return;
+        if (this.currentFloor < 15 && !map.stairsPos) {
+            for (var y = 0; y < map.height; y++) {
+                for (var x = 0; x < map.width; x++) {
+                    if (map.map[y][x].type === 'stairs') map.stairsPos = { x: x, y: y };
+                }
+            }
+        }
+        if (map.stairsPos) this.dg._ensureRoute(map.map, map.playerStart, map.stairsPos);
+        if (map.storyTarget && !this.storyState.flags.foundExplorerClue) this.dg._ensureRoute(map.map, map.playerStart, map.storyTarget);
     }
 
     _trap(type) {
@@ -255,6 +271,12 @@ class ExploreScene extends Phaser.Scene {
             this.time.delayedCall(900, function() { self._encounter(true); });
             return;
         }
+
+        if (this.currentFloor === 3 || this.currentFloor === 6 || this.currentFloor === 10 || this.currentFloor === 12) {
+            this._triggerFloorChoice(this.currentFloor);
+            return;
+        }
+
         var milestone = getStoryMilestone(this.currentFloor);
         if (milestone && !this.storyState.seenMilestones[this.currentFloor]) {
             var chapterData = updateStoryForFloor(this.storyState, this.currentFloor);
@@ -266,6 +288,89 @@ class ExploreScene extends Phaser.Scene {
         }
         this.menuOpen = false;
         if (this.threeDungeon) this.threeDungeon.setVisible(true);
+    }
+
+    _triggerFloorChoice(floor) {
+        var self = this;
+        var choiceConfig = {
+            3: {
+                title: 'El legado de los olvidados',
+                choices: [
+                    { label: 'Guardar la nota del explorador', value: 'keep_note' },
+                    { label: 'Dejar que la verdad duerma', value: 'bury_truth' },
+                    { label: 'Llevar la pista a la torre', value: 'carry_truth' }
+                ]
+            },
+            6: {
+                title: 'La tumba abierta',
+                choices: [
+                    { label: 'Liberar a los muertos con un rito', value: 'free_dead' },
+                    { label: 'Cerrar la cámara y seguir avanzando', value: 'seal_tomb' },
+                    { label: 'Usar los huesos como guía', value: 'use_bones' }
+                ]
+            },
+            10: {
+                title: 'El sello elemental',
+                choices: [
+                    { label: 'Unir fuego y hielo en equilibrio', value: 'balance_elements' },
+                    { label: 'Dominar ambos con fuerza', value: 'dominate_elements' },
+                    { label: 'Dejar que la naturaleza decida', value: 'nature_choice' }
+                ]
+            },
+            12: {
+                title: 'El rostro de Tharion',
+                choices: [
+                    { label: 'Exponer la verdad del mago', value: 'expose_truth' },
+                    { label: 'Ofrecer clemencia', value: 'mercy' },
+                    { label: 'Nombrar a la torre como heredera', value: 'inherit_tower' }
+                ]
+            }
+        };
+
+        var config = choiceConfig[floor];
+        if (!config) return;
+        if (this.storyState.flags['decision_' + floor]) return;
+        this.storyState.flags['decision_' + floor] = true;
+
+        this.scene.launch('ChoiceScene', {
+            title: config.title,
+            choices: config.choices,
+            party: this.party,
+            inventory: this.inventory,
+            gold: this.gold,
+            currentFloor: this.currentFloor,
+            onChoice: function(value) {
+                var bonus = 0;
+                if (value === 'keep_note' || value === 'free_dead' || value === 'balance_elements' || value === 'mercy') {
+                    bonus = 20;
+                }
+                if (bonus > 0) {
+                    self.gold += bonus;
+                    self._msg('Decisión tomada. + ' + bonus + ' oro y la historia cambia.');
+                } else {
+                    self._msg('La decisión del grupo ha cambiado el rumbo del viaje.');
+                }
+                self.storyState.flags['decision_' + floor] = value;
+                self.saveSys.save({
+                    party: self.party,
+                    inventory: self.inventory,
+                    gold: self.gold,
+                    floor: self.currentFloor,
+                    playerX: self.px,
+                    playerY: self.py,
+                    playerDir: self.pdir,
+                    maps: self.maps,
+                    storyState: self.storyState,
+                    playTime: self.playTime,
+                    settings: self.saveSys.loadSettings()
+                });
+                self.menuOpen = false;
+                self._updateHUD();
+                if (self.threeDungeon) self.threeDungeon.setVisible(true);
+                self.scene.resume();
+            }
+        });
+        this.scene.pause();
     }
 
     _showStoryMilestone(floor, dialogues, chapterData) {
@@ -304,6 +409,7 @@ class ExploreScene extends Phaser.Scene {
     }
 
     _interact() {
+        if (this.moving || (this.threeDungeon && this.threeDungeon.isAnimating())) return;
         var map = this.maps[this.currentFloor];
         var currentTile = map.map[this.py][this.px];
         if (currentTile.type === 'stairs') {
@@ -314,6 +420,11 @@ class ExploreScene extends Phaser.Scene {
         var fx = this.px + fd.dx, fy = this.py + fd.dy;
         if (fy < 0 || fy >= map.height || fx < 0 || fx >= map.width) return;
         var t = map.map[fy][fx];
+
+        if (t.type === 'stairs') {
+            this._goDown();
+            return;
+        }
 
         if (t.type === 'door') {
             if (t.locked) {
@@ -372,7 +483,7 @@ class ExploreScene extends Phaser.Scene {
         this.dg.revealAround(map.map, this.px, this.py, 2);
     }
 
-    _draw() {
+    _draw(onComplete) {
         this.gfx.clear();
         this._tempImages.forEach(function(img) { img.destroy(); });
         this._tempImages = [];
@@ -380,9 +491,10 @@ class ExploreScene extends Phaser.Scene {
 
         if (this.threeDungeon && this.threeDungeon.isReady()) {
             this.gfx.clear();
-            this.threeDungeon.render(map, this.px, this.py, this.pdir);
+            this.threeDungeon.render(map, this.px, this.py, this.pdir, onComplete);
         } else {
             this._drawDungeonMap(map);
+            if (onComplete) onComplete();
         }
     }
 
@@ -705,7 +817,8 @@ class ExploreScene extends Phaser.Scene {
                 var nx = current.x + dirs[i].dx;
                 var ny = current.y + dirs[i].dy;
                 if (nx < 0 || nx >= map.width || ny < 0 || ny >= map.height) continue;
-                if (map.map[ny][nx].type === 'wall') continue;
+                var tile = map.map[ny][nx];
+                if (tile.type === 'wall' || (tile.type === 'door' && tile.locked)) continue;
                 var key = nx + ',' + ny;
                 if (visited[key]) continue;
                 visited[key] = true;
@@ -958,7 +1071,7 @@ class ExploreScene extends Phaser.Scene {
         this.saveSys.save({
             party: this.party, inventory: this.inventory, gold: this.gold,
             floor: this.currentFloor, playerX: this.px, playerY: this.py, playerDir: this.pdir,
-            maps: this.maps, playTime: this.playTime, settings: {}
+            maps: this.maps, storyState: this.storyState, playTime: this.playTime, settings: this.saveSys.loadSettings()
         });
         this._msg('Partida guardada! (F5)');
     }
@@ -970,7 +1083,7 @@ class ExploreScene extends Phaser.Scene {
             self.saveSys.save({
                 party: self.party, inventory: self.inventory, gold: self.gold,
                 floor: self.currentFloor, playerX: self.px, playerY: self.py, playerDir: self.pdir,
-                maps: self.maps, playTime: self.playTime, settings: {}
+                maps: self.maps, storyState: self.storyState, playTime: self.playTime, settings: self.saveSys.loadSettings()
             });
         }});
     }

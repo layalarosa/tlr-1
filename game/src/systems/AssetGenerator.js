@@ -42,16 +42,6 @@ class AssetGenerator {
     _generateFallbackEnemySprites() {
         var S = 3;
         var fallbacks = {
-            'zombie': { pixels: [
-                '  GGGG  ',
-                ' GGGGGG ',
-                'GGRGGRGG',
-                ' GGGGGG ',
-                '  GGGG  ',
-                ' GGGGGG ',
-                'GG    GG',
-                'G      G',
-            ], palette: { G: '#556B2F', R: '#8B0000' } },
             'minotaur': { pixels: [
                 'HH  HH ',
                 'HHHHHHH',
@@ -122,16 +112,6 @@ class AssetGenerator {
                 '  bCb  ',
                 '   b   ',
             ], palette: { b: '#00BFFF', B: '#87CEEB', W: '#FFFFFF', Y: '#FFFF00', C: '#ADD8E6' } },
-            'bandit': { pixels: [
-                ' BBBBB ',
-                'BBBBBBB',
-                'BWBBBWB',
-                'BBBBBBB',
-                ' BBBBB ',
-                'BBBBBBB',
-                'B BB B ',
-                'B    B ',
-            ], palette: { B: '#8B4513', W: '#FFD700' } },
             'lich': { pixels: [
                 ' PPPP ',
                 'PPPPPP',

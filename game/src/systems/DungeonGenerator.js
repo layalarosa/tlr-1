@@ -33,11 +33,73 @@ class DungeonGenerator {
         var stairsPos = null;
         if (config.stairs > 0 && floor < 15) {
             var last = rooms[rooms.length - 1];
-            stairsPos = this._center(last);
+            stairsPos = this._findSpecialPosition(map, last, start);
             map[stairsPos.y][stairsPos.x] = { type: 'stairs', explored: false, visible: false };
+            this._ensureRoute(map, start, stairsPos);
         }
+        if (storyTarget) this._ensureRoute(map, start, storyTarget);
 
         return { floor: floor, name: config.name, width: config.width, height: config.height, map: map, playerStart: start, stairsPos: stairsPos, storyTarget: storyTarget };
+    }
+
+    _ensureRoute(map, start, goal) {
+        var queue = [{ x: start.x, y: start.y }];
+        var visited = {};
+        var previous = {};
+        var key = function(x, y) { return x + ',' + y; };
+        var directions = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+        visited[key(start.x, start.y)] = true;
+
+        for (var index = 0; index < queue.length; index++) {
+            var current = queue[index];
+            if (current.x === goal.x && current.y === goal.y) break;
+            for (var i = 0; i < directions.length; i++) {
+                var next = { x: current.x + directions[i].x, y: current.y + directions[i].y };
+                var nextKey = key(next.x, next.y);
+                if (!map[next.y] || !map[next.y][next.x] || visited[nextKey]) continue;
+                var tile = map[next.y][next.x];
+                if (tile.type !== 'floor' && tile.type !== 'stairs' && tile.type !== 'shop' && !(tile.type === 'door' && !tile.locked)) continue;
+                visited[nextKey] = true;
+                previous[nextKey] = current;
+                queue.push(next);
+            }
+        }
+
+        if (visited[key(goal.x, goal.y)]) return;
+
+        // A locked door can accidentally become the only link to the exit.
+        // Opening a direct fallback keeps the procedural floor finishable.
+        var x = start.x;
+        var y = start.y;
+        while (x !== goal.x) {
+            x += x < goal.x ? 1 : -1;
+            this._openRouteTile(map, x, y);
+        }
+        while (y !== goal.y) {
+            y += y < goal.y ? 1 : -1;
+            this._openRouteTile(map, x, y);
+        }
+    }
+
+    _openRouteTile(map, x, y) {
+        if (!map[y] || !map[y][x]) return;
+        if (map[y][x].type === 'wall' || map[y][x].type === 'door') {
+            map[y][x] = { type: 'floor', explored: false, visible: false };
+        }
+    }
+
+    _findSpecialPosition(map, room, start) {
+        var candidates = [];
+        for (var y = room.y; y < room.y + room.h; y++) {
+            for (var x = room.x; x < room.x + room.w; x++) {
+                var tile = map[y][x];
+                if (tile.type === 'floor' && !(x === start.x && y === start.y) && !tile.chest && !tile.trap) {
+                    candidates.push({ x: x, y: y });
+                }
+            }
+        }
+        if (candidates.length === 0) return this._center(room);
+        return candidates[Math.floor(Math.random() * candidates.length)];
     }
 
     _emptyMap(w, h) {
@@ -67,6 +129,11 @@ class DungeonGenerator {
             this._carve(map, fallback);
             rooms.push(fallback);
         }
+        rooms.sort(function(a, b) {
+            var aCenter = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
+            var bCenter = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+            return (aCenter.y + aCenter.x) - (bCenter.y + bCenter.x);
+        });
         return rooms;
     }
 
