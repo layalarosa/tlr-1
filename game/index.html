@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>The Last Riders - Dungeon Crawler RPG</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: monospace; }
+        #game-container { position: relative; }
+        canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
+        #back-btn { position: fixed; top: 10px; left: 10px; padding: 8px 16px; background: rgba(30,30,60,0.9); color: #aaaaff; border: 1px solid #4444aa; border-radius: 4px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 10px; z-index: 1000; text-decoration: none; transition: all 0.2s; }
+        #back-btn:hover { background: rgba(60,60,120,0.95); border-color: #ffaa44; color: #ffaa44; }
+        #touch-controls { display: none; position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        #touch-controls .row { display: flex; justify-content: center; gap: 5px; margin: 2px 0; }
+        #touch-controls button { width: 50px; height: 50px; font-size: 18px; background: rgba(30,30,60,0.8); color: #aaaaff; border: 1px solid #4444aa; border-radius: 6px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+        #touch-controls button:active { background: rgba(60,60,120,0.9); }
+        @media (pointer: coarse) { #touch-controls { display: block; } }
+    </style>
+</head>
+<body>
+    <a href="../" id="back-btn">← VOLVER</a>
+    <div id="game-container" style="visibility: hidden;">
+        <div id="touch-controls">
+            <div class="row"><button id="btn-up">&#9650;</button></div>
+            <div class="row"><button id="btn-left">&#9664;</button><button id="btn-interact">OK</button><button id="btn-right">&#9654;</button></div>
+            <div class="row"><button id="btn-down">&#9660;</button></div>
+        </div>
+    </div>
+    <script src="vendor/phaser.min.js?v=2"></script>
+    <script src="src/data/races.js?v=2"></script>
+    <script src="src/data/classes.js?v=2"></script>
+    <script src="src/data/enemies.js?v=2"></script>
+    <script src="src/data/items.js?v=2"></script>
+    <script src="src/data/names.js?v=2"></script>
+    <script src="src/data/narrative.js?v=2"></script>
+    <script src="src/data/itemPrefixes.js?v=2"></script>
+    <script src="src/entities/Character.js?v=2"></script>
+    <script src="src/entities/Enemy.js?v=2"></script>
+    <script src="src/systems/DungeonGenerator.js?v=2"></script>
+    <script src="src/systems/CombatSystem.js?v=2"></script>
+    <script src="src/systems/SaveSystem.js?v=2"></script>
+    <script src="src/systems/AlignmentSystem.js?v=2"></script>
+    <script src="src/systems/AssetGenerator.js?v=2"></script>
+    <script src="src/systems/ParticleManager.js?v=2"></script>
+    <script src="src/systems/AudioManager.js?v=2"></script>
+    <script src="src/systems/ScreenEffects.js?v=2"></script>
+    <script src="src/ui/HUD.js?v=2"></script>
+    <script src="src/ui/MenuUI.js?v=2"></script>
+    <script src="src/ui/UITheme.js?v=2"></script>
+    <script src="src/scenes/BootScene.js?v=2"></script>
+    <script src="src/scenes/MenuScene.js?v=2"></script>
+    <script src="src/scenes/CreatePartyScene.js?v=2"></script>
+    <script src="src/scenes/ExploreScene.js?v=2"></script>
+    <script src="src/scenes/CombatScene.js?v=2"></script>
+    <script src="src/scenes/ShopScene.js?v=2"></script>
+    <script src="src/scenes/GameOverScene.js?v=2"></script>
+    <script src="src/scenes/NarrativeScene.js?v=2"></script>
+    <script src="src/scenes/InventoryScene.js?v=2"></script>
+    <script src="src/main.js?v=2"></script>
+    <script>
+        document.getElementById('btn-up').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'w',code:'KeyW'})); });
+        document.getElementById('btn-down').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'s',code:'KeyS'})); });
+        document.getElementById('btn-left').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'a',code:'KeyA'})); });
+        document.getElementById('btn-right').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:'d',code:'KeyD'})); });
+        document.getElementById('btn-interact').addEventListener('touchstart', function(e) { e.preventDefault(); window.dispatchEvent(new KeyboardEvent('keydown', {key:' ',code:'Space'})); });
+    </script>
+    <script>
+        document.fonts.ready.then(function() {
+            document.getElementById('game-container').style.visibility = 'visible';
+        });
+    </script>
+</body>
+</html>

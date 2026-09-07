@@ -3,35 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Las Fauces - Dungeon Crawler RPG</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #game-container { position: relative; }
-        canvas { display: block; image-rendering: pixelated; }
-    </style>
+    <title>The Last Riders - Dungeon Crawler RPG</title>
+    <meta name="description" content="The Last Riders - Un dungeon crawler RPG retro con 15 pisos de mazmorras, sistema de combate por turnos, y 19 hechizos únicos. ¡Juega gratis!">
+    <link rel="stylesheet" href="css/landing.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔</text></svg>">
 </head>
 <body>
-    <div id="game-container"></div>
-    <script src="vendor/phaser.min.js"></script>
-    <script src="src/data/races.js"></script>
-    <script src="src/data/classes.js"></script>
-    <script src="src/data/enemies.js"></script>
-    <script src="src/data/items.js"></script>
-    <script src="src/entities/Character.js"></script>
-    <script src="src/entities/Enemy.js"></script>
-    <script src="src/systems/DungeonGenerator.js"></script>
-    <script src="src/systems/CombatSystem.js"></script>
-    <script src="src/systems/SaveSystem.js"></script>
-    <script src="src/systems/AlignmentSystem.js"></script>
-    <script src="src/ui/HUD.js"></script>
-    <script src="src/ui/MenuUI.js"></script>
-    <script src="src/scenes/BootScene.js"></script>
-    <script src="src/scenes/MenuScene.js"></script>
-    <script src="src/scenes/CreatePartyScene.js"></script>
-    <script src="src/scenes/ExploreScene.js"></script>
-    <script src="src/scenes/CombatScene.js"></script>
-    <script src="src/scenes/GameOverScene.js"></script>
-    <script src="src/main.js"></script>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">THE LAST RIDERS</div>
+        <ul>
+            <li><a href="#features">Características</a></li>
+            <li><a href="#dungeon">Mazmorra</a></li>
+            <li><a href="#donate">Donar</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>THE LAST RIDERS</h1>
+        <p class="subtitle">⚔ Dungeon Crawler RPG ⚔</p>
+        <p class="tagline">
+            Desciende 15 pisos de mazmorras procedurally generadas. 
+            Enfrenta a 16 tipos de enemigos, domina 19 hechizos, y derrota al Archimago Tharion II.
+        </p>
+        <div>
+            <a href="game/" class="btn btn-primary">JUGAR AHORA</a>
+            <a href="#features" class="btn btn-secondary">DESCUBRIR MÁS</a>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features">
+        <h2 class="section-title">⚔ CARACTERÍSTICAS ⚔</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🏰</div>
+                <h3>15 PISOS</h3>
+                <p>Desde los Sotanos Olvidados hasta la Cima del Archimago. Cada región tiene su propia atmósfera y enemigos únicos.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚔</div>
+                <h3>COMBATE TÁCTICO</h3>
+                <p>Sistema de combate por turnos con 19 hechizos y habilidades. Posiciona a tu party en primera o segunda fila.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎲</div>
+                <h3>GENERACIÓN PROCEDURAL</h3>
+                <p>Mazmorras generadas algorítmicamente con trampas, cofres, tiendas y puertas cerradas con llaves.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>PARTY DE 4</h3>
+                <p>Crea tu grupo con 4 razas y 7 clases. Sistema de alineamiento que afecta habilidades y composición del grupo.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎭</div>
+                <h3>16 ENEMIGOS</h3>
+                <p>Zombis, elementales, caballeros de la muerte, y el mismísimo Archimago Tharion II como jefe final.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎒</div>
+                <h3>LOOT PROCEDURAL</h3>
+                <p>Sistema de prefijos y sufijos para armas y armaduras. Objetos únicos como "Espada Ardiente del Dragón".</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💾</div>
+                <h3>GUARDADO AUTOMÁTICO</h3>
+                <p>Guardado automático cada 60 segundos. Exporta e importa tus partidas como archivos JSON.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>MOBILE READY</h3>
+                <p>Controles táctiles para dispositivos móviles. Juega desde tu navegador en cualquier dispositivo.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dungeon Floors Section -->
+    <section id="dungeon" class="floors-section">
+        <h2 class="section-title">🏰 LA MAZMORRA 🏰</h2>
+        <div class="floors-grid">
+            <div class="floor-card">
+                <div class="floor-range">PISOS 1-3</div>
+                <div class="floor-name">Los Sotanos Olvidados</div>
+            </div>
+            <div class="floor-card">
+                <div class="floor-range">PISOS 4-7</div>
+                <div class="floor-name">Las Criptas Profundas</div>
+            </div>
+            <div class="floor-card">
+                <div class="floor-range">PISOS 8-11</div>
+                <div class="floor-name">El Laberinto Elemental</div>
+            </div>
+            <div class="floor-card">
+                <div class="floor-range">PISOS 12-14</div>
+                <div class="floor-name">La Torre del Archimago</div>
+            </div>
+            <div class="floor-card">
+                <div class="floor-range">PISO 15</div>
+                <div class="floor-name">La Cima del Archimago</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Donation Section -->
+    <section id="donate">
+        <div class="donation-section">
+            <h2>❤ ¡APOYA EL PROYECTO! ❤</h2>
+            <p>
+                The Last Riders es un proyecto independiente creado con pasión. 
+                Si disfrutas del juego, considera hacer una donación para apoyar 
+                el desarrollo continuo y nuevas actualizaciones.
+            </p>
+            <div class="donation-methods">
+                <a href="https://ko-fi.com/tu-usuario" target="_blank" class="donation-btn">
+                    <span class="icon">☕</span>
+                    <span>Ko-fi</span>
+                </a>
+                <a href="https://www.paypal.com/donate?hosted_button_id=tu-id" target="_blank" class="donation-btn">
+                    <span class="icon">💳</span>
+                    <span>PayPal</span>
+                </a>
+                <a href="https://buymeacoffee.com/tu-usuario" target="_blank" class="donation-btn">
+                    <span class="icon">🍺</span>
+                    <span>Buy Me a Coffee</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2026 The Last Riders. Todos los derechos reservados.</p>
+        <p class="credits">
+            Assets: <a href="https://opengameart.org" target="_blank">OpenGameArt</a> | 
+            Engine: <a href="https://phaser.io" target="_blank">Phaser 3</a>
+        </p>
+    </footer>
 </body>
 </html>

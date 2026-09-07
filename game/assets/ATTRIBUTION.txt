@@ -1,0 +1,16 @@
+# Atribucion de Assets
+
+## Tiles de Dungeon (assets/sprites/wall.png, floor.png, door.png, etc.)
+- Fuente: "First Person Dungeon Crawl - More Tilesets" por OptimusGnu
+- Fuente original: "Heroine Dusk" por Clint Bellanger
+- Licencia: CC-BY-SA 3.0
+- Web: https://opengameart.org/content/first-person-dungeon-crawl-more-tilesets
+
+## Sprites de Enemigos (assets/sprites/enemies.png)
+- Fuente: "10 Fantasy RPG enemies" por CharlesGabriel
+- Licencia: CC-BY 3.0 / CC-BY-SA 3.0 / GPL 2.0 / GPL 3.0
+- Web: https://opengameart.org/content/10-fantasy-rpg-enemies
+
+## Assets Generados Programaticamente
+- Sprites de items, personajes e interfaz generados en codigo
+- Sin restricciones de licencia
