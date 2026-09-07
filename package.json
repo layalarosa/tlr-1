@@ -5,7 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "start": "npx serve .",
-    "build": "npx webpack --mode production"
+    "build": "echo 'Static site - no build step required'"
   },
   "dependencies": {
     "phaser": "^3.80.1"
