@@ -8,6 +8,7 @@ class ThreeDungeonView {
         this.floorLayer = null;
         this.wallLayer = null;
         this.detailLayer = null;
+        this.torchLayer = null;
         this._resizeHandler = this._resize.bind(this);
         this._mouseMoveHandler = this._onMouseMove.bind(this);
         this._pointerLockHandler = this._onPointerLockChange.bind(this);
@@ -18,6 +19,9 @@ class ThreeDungeonView {
         this._dragging = false;
         this._lastPointerX = 0;
         this._lastPointerY = 0;
+        this._wallTorches = [];
+        this._torchLights = [];
+        this._flickerFrame = null;
 
         if (!this._ready) return;
 
@@ -33,7 +37,7 @@ class ThreeDungeonView {
         document.addEventListener('pointerlockchange', this._pointerLockHandler);
 
         this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, alpha: true });
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        this.renderer.setPixelRatio(1);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.setClearColor(0x080807, 1);
 
@@ -56,9 +60,115 @@ class ThreeDungeonView {
         this.floorLayer = new THREE.Group();
         this.wallLayer = new THREE.Group();
         this.detailLayer = new THREE.Group();
-        this.world.add(this.floorLayer, this.wallLayer, this.detailLayer);
+        this.torchLayer = new THREE.Group();
+        this.world.add(this.floorLayer, this.wallLayer, this.detailLayer, this.torchLayer);
+
+        this._textures = {};
+        this._generateProceduralTextures();
+        this._startFlickerLoop();
+
         window.addEventListener('resize', this._resizeHandler);
         this._resize();
+    }
+
+    _generateProceduralTextures() {
+        this._textures.stone = this._makeCanvasTexture(16, 16, function(ctx) {
+            ctx.fillStyle = '#4a4640';
+            ctx.fillRect(0, 0, 16, 16);
+            for (var i = 0; i < 40; i++) {
+                var v = 58 + Math.floor(Math.random() * 24);
+                ctx.fillStyle = 'rgb(' + v + ',' + (v - 4) + ',' + (v - 8) + ')';
+                ctx.fillRect(Math.floor(Math.random() * 16), Math.floor(Math.random() * 16), 1, 1);
+            }
+            ctx.fillStyle = '#35322d';
+            ctx.fillRect(0, 0, 16, 1);
+            ctx.fillRect(0, 8, 16, 1);
+            ctx.fillRect(0, 0, 1, 16);
+            ctx.fillRect(8, 0, 1, 16);
+        });
+
+        this._textures.floor = this._makeCanvasTexture(16, 16, function(ctx) {
+            ctx.fillStyle = '#3d3a32';
+            ctx.fillRect(0, 0, 16, 16);
+            for (var i = 0; i < 30; i++) {
+                var v = 48 + Math.floor(Math.random() * 20);
+                ctx.fillStyle = 'rgb(' + v + ',' + (v - 2) + ',' + (v - 6) + ')';
+                ctx.fillRect(Math.floor(Math.random() * 16), Math.floor(Math.random() * 16), 1, 1);
+            }
+            ctx.fillStyle = '#2e2b26';
+            ctx.fillRect(0, 0, 16, 1);
+            ctx.fillRect(0, 0, 1, 16);
+        });
+
+        this._textures.darkStone = this._makeCanvasTexture(16, 16, function(ctx) {
+            ctx.fillStyle = '#242522';
+            ctx.fillRect(0, 0, 16, 16);
+            for (var i = 0; i < 25; i++) {
+                var v = 30 + Math.floor(Math.random() * 14);
+                ctx.fillStyle = 'rgb(' + v + ',' + (v + 1) + ',' + (v - 2) + ')';
+                ctx.fillRect(Math.floor(Math.random() * 16), Math.floor(Math.random() * 16), 1, 1);
+            }
+        });
+
+        this._textures.ceiling = this._makeCanvasTexture(16, 16, function(ctx) {
+            ctx.fillStyle = '#161714';
+            ctx.fillRect(0, 0, 16, 16);
+            for (var i = 0; i < 20; i++) {
+                var v = 18 + Math.floor(Math.random() * 10);
+                ctx.fillStyle = 'rgb(' + v + ',' + (v + 1) + ',' + (v - 1) + ')';
+                ctx.fillRect(Math.floor(Math.random() * 16), Math.floor(Math.random() * 16), 1, 1);
+            }
+        });
+
+        this._textures.mossStone = this._makeCanvasTexture(16, 16, function(ctx) {
+            ctx.fillStyle = '#3e3d36';
+            ctx.fillRect(0, 0, 16, 16);
+            for (var i = 0; i < 30; i++) {
+                var v = 50 + Math.floor(Math.random() * 18);
+                ctx.fillStyle = 'rgb(' + v + ',' + (v - 2) + ',' + (v - 8) + ')';
+                ctx.fillRect(Math.floor(Math.random() * 16), Math.floor(Math.random() * 16), 1, 1);
+            }
+            ctx.fillStyle = '#2a3224';
+            ctx.fillRect(2, 12, 3, 2);
+            ctx.fillRect(11, 14, 2, 2);
+            ctx.fillStyle = '#35322d';
+            ctx.fillRect(0, 0, 16, 1);
+            ctx.fillRect(0, 8, 16, 1);
+            ctx.fillRect(0, 0, 1, 16);
+            ctx.fillRect(8, 0, 1, 16);
+        });
+    }
+
+    _makeCanvasTexture(w, h, drawFn) {
+        var c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        var ctx = c.getContext('2d');
+        drawFn(ctx);
+        var tex = new THREE.CanvasTexture(c);
+        tex.magFilter = THREE.NearestFilter;
+        tex.minFilter = THREE.NearestFilter;
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        return tex;
+    }
+
+    _startFlickerLoop() {
+        var self = this;
+        var startTime = performance.now();
+        function tick(now) {
+            if (!self._ready) return;
+            var t = (now - startTime) / 1000;
+            var flicker = Math.sin(t * 3.7) * 0.12 + Math.sin(t * 7.3) * 0.06 + Math.sin(t * 11.1) * 0.04;
+            self.torch.intensity = 2.2 + flicker;
+            for (var i = 0; i < self._torchLights.length; i++) {
+                var tl = self._torchLights[i];
+                var phase = t * 3.2 + i * 1.7;
+                tl.intensity = tl._baseIntensity + Math.sin(phase) * 0.15 + Math.sin(phase * 2.1) * 0.08;
+            }
+            self._flickerFrame = requestAnimationFrame(tick);
+        }
+        this._flickerFrame = requestAnimationFrame(tick);
     }
 
     isReady() {
@@ -113,19 +223,23 @@ class ThreeDungeonView {
             this._clear(this.floorLayer);
             this._clear(this.wallLayer);
             this._clear(this.detailLayer);
+            this._clearTorchLayer();
 
-            var floorMaterial = new THREE.MeshLambertMaterial({ color: 0x565249 });
-            var wallMaterial = new THREE.MeshLambertMaterial({ color: 0x4a4942 });
-            var darkWallMaterial = new THREE.MeshLambertMaterial({ color: 0x242522 });
-            var ceilingMaterial = new THREE.MeshLambertMaterial({ color: 0x161714, side: THREE.BackSide });
+            var floorMat = new THREE.MeshLambertMaterial({ map: this._textures.floor });
+            var mossFloorMat = new THREE.MeshLambertMaterial({ map: this._textures.mossStone });
+            var wallMat = new THREE.MeshLambertMaterial({ map: this._textures.stone });
+            var darkWallMat = new THREE.MeshLambertMaterial({ map: this._textures.darkStone });
+            var ceilingMat = new THREE.MeshLambertMaterial({ map: this._textures.ceiling, side: THREE.BackSide });
             var floorGeometry = new THREE.BoxGeometry(1, 0.08, 1);
             var wallGeometry = new THREE.BoxGeometry(1, 1.8, 1);
             var ceilingGeometry = new THREE.PlaneGeometry(map.width, map.height);
 
-            var ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            var ceiling = new THREE.Mesh(ceilingGeometry, ceilingMat);
             ceiling.rotation.x = Math.PI / 2;
             ceiling.position.set(map.width / 2, 1.85, map.height / 2);
             this.floorLayer.add(ceiling);
+
+            var floorPositions = [];
 
             for (var y = 0; y < map.height; y++) {
                 for (var x = 0; x < map.width; x++) {
@@ -134,15 +248,18 @@ class ThreeDungeonView {
                     var centerZ = y + 0.5;
 
                     if (tile.type === 'wall') {
-                        var wall = new THREE.Mesh(wallGeometry, tile.explored ? wallMaterial : darkWallMaterial);
+                        var useMat = tile.explored ? wallMat : darkWallMat;
+                        var wall = new THREE.Mesh(wallGeometry, useMat);
                         wall.position.set(centerX, 0.9, centerZ);
                         this.wallLayer.add(wall);
                         continue;
                     }
 
-                    var floor = new THREE.Mesh(floorGeometry, floorMaterial);
+                    var useFloorMat = (x + y) % 7 === 0 ? mossFloorMat : floorMat;
+                    var floor = new THREE.Mesh(floorGeometry, useFloorMat);
                     floor.position.set(centerX, 0, centerZ);
                     this.floorLayer.add(floor);
+                    floorPositions.push({ x: x, y: y });
 
                     if (tile.type === 'door') this._addDoor(centerX, centerZ, tile.locked);
                     if (tile.type === 'stairs') this._addStairs(centerX, centerZ);
@@ -150,6 +267,8 @@ class ThreeDungeonView {
                     if (tile.chest && !tile.chestOpen) this._addChest(centerX, centerZ);
                 }
             }
+
+            this._placeWallTorches(map, floorPositions);
         }
 
         var targetX = px + 0.5;
@@ -179,6 +298,57 @@ class ThreeDungeonView {
         } else {
             this.renderer.render(this.world, this.camera);
             if (onComplete) onComplete();
+        }
+    }
+
+    _placeWallTorches(map, floorPositions) {
+        var floorSet = {};
+        for (var i = 0; i < floorPositions.length; i++) {
+            floorSet[floorPositions[i].x + ',' + floorPositions[i].y] = true;
+        }
+
+        var torchCount = 0;
+        var maxTorches = 12;
+        var dirs = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
+
+        for (var y = 0; y < map.height && torchCount < maxTorches; y++) {
+            for (var x = 0; x < map.width && torchCount < maxTorches; x++) {
+                if (map.map[y][x].type !== 'wall') continue;
+                var floorDir = null;
+                for (var d = 0; d < dirs.length; d++) {
+                    var nx = x + dirs[d].dx;
+                    var ny = y + dirs[d].dy;
+                    if (floorSet[nx + ',' + ny]) { floorDir = dirs[d]; break; }
+                }
+                if (!floorDir) continue;
+                if (x % 5 !== 0 || y % 5 !== 0) continue;
+                var offsetX = -floorDir.dx * 0.42;
+                var offsetZ = -floorDir.dy * 0.42;
+                var tx = x + 0.5 + offsetX;
+                var tz = y + 0.5 + offsetZ;
+
+                var stickMat = new THREE.MeshLambertMaterial({ color: 0x5a3a20 });
+                var stick = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.3, 0.06), stickMat);
+                stick.position.set(tx, 1.2, tz);
+                this.torchLayer.add(stick);
+
+                var bracketMat = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
+                var bracket = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 0.12), bracketMat);
+                bracket.position.set(tx, 1.05, tz);
+                this.torchLayer.add(bracket);
+
+                var flameMat = new THREE.MeshBasicMaterial({ color: 0xff8833 });
+                var flame = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.08), flameMat);
+                flame.position.set(tx, 1.38, tz);
+                this.torchLayer.add(flame);
+
+                var torchLight = new THREE.PointLight(0xd49a62, 0.8, 3, 2);
+                torchLight.position.set(tx, 1.3, tz);
+                torchLight._baseIntensity = 0.8;
+                this.torchLayer.add(torchLight);
+                this._torchLights.push(torchLight);
+                torchCount++;
+            }
         }
     }
 
@@ -226,34 +396,64 @@ class ThreeDungeonView {
     }
 
     _addDoor(x, z, locked) {
-        var material = new THREE.MeshLambertMaterial({ color: locked ? 0x722d27 : 0x927b55 });
-        var door = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.35, 0.82), material);
+        var doorMat = new THREE.MeshLambertMaterial({ color: locked ? 0x5a2018 : 0x7a6540 });
+        var door = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.35, 0.82), doorMat);
         door.position.set(x, 0.72, z);
         this.detailLayer.add(door);
+
+        var frameMat = new THREE.MeshLambertMaterial({ color: 0x3a3630 });
+        var frameL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.45, 0.08), frameMat);
+        frameL.position.set(x, 0.72, z - 0.42);
+        this.detailLayer.add(frameL);
+        var frameR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.45, 0.08), frameMat);
+        frameR.position.set(x, 0.72, z + 0.42);
+        this.detailLayer.add(frameR);
+        var frameT = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.9), frameMat);
+        frameT.position.set(x, 1.42, z);
+        this.detailLayer.add(frameT);
+
+        if (locked) {
+            var lockMat = new THREE.MeshLambertMaterial({ color: 0x8a6a30 });
+            var lock = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.08), lockMat);
+            lock.position.set(x - 0.08, 0.72, z + 0.32);
+            this.detailLayer.add(lock);
+        }
     }
 
     _addStairs(x, z) {
-        var material = new THREE.MeshLambertMaterial({ color: 0xc7a96d, emissive: 0x352815 });
+        var stairMat = new THREE.MeshLambertMaterial({ color: 0xb09460, emissive: 0x2a1c0c });
         for (var i = 0; i < 4; i++) {
-            var step = new THREE.Mesh(new THREE.BoxGeometry(0.62 + i * 0.08, 0.08, 0.18), material);
+            var step = new THREE.Mesh(new THREE.BoxGeometry(0.62 + i * 0.08, 0.08, 0.18), stairMat);
             step.position.set(x, 0.08 + i * 0.1, z - 0.25 + i * 0.14);
             this.detailLayer.add(step);
         }
         var beacon = new THREE.Mesh(
             new THREE.OctahedronGeometry(0.12, 0),
-            new THREE.MeshLambertMaterial({ color: 0xe0c27a, emissive: 0x5a3c16 })
+            new THREE.MeshBasicMaterial({ color: 0xe0c27a })
         );
         beacon.position.set(x, 0.75, z);
         this.detailLayer.add(beacon);
     }
 
     _addChest(x, z) {
-        var chest = new THREE.Mesh(
-            new THREE.BoxGeometry(0.42, 0.28, 0.32),
-            new THREE.MeshLambertMaterial({ color: 0x9b382d, emissive: 0x160605 })
+        var chestBody = new THREE.Mesh(
+            new THREE.BoxGeometry(0.42, 0.22, 0.32),
+            new THREE.MeshLambertMaterial({ color: 0x7a2820 })
         );
-        chest.position.set(x, 0.18, z);
-        this.detailLayer.add(chest);
+        chestBody.position.set(x, 0.14, z);
+        this.detailLayer.add(chestBody);
+
+        var chestLid = new THREE.Mesh(
+            new THREE.BoxGeometry(0.42, 0.1, 0.32),
+            new THREE.MeshLambertMaterial({ color: 0x8a3228 })
+        );
+        chestLid.position.set(x, 0.3, z);
+        this.detailLayer.add(chestLid);
+
+        var trimMat = new THREE.MeshLambertMaterial({ color: 0x9a7a30 });
+        var trim = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.02, 0.02), trimMat);
+        trim.position.set(x, 0.22, z + 0.16);
+        this.detailLayer.add(trim);
     }
 
     _addMarker(x, z, color) {
@@ -265,11 +465,22 @@ class ThreeDungeonView {
         this.detailLayer.add(marker);
     }
 
+    _clearTorchLayer() {
+        this._torchLights = [];
+        this._clear(this.torchLayer);
+    }
+
     _clear(group) {
         while (group.children.length) {
             var child = group.children.pop();
             if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(function(m) { m.dispose(); });
+                } else {
+                    child.material.dispose();
+                }
+            }
         }
     }
 
@@ -287,12 +498,16 @@ class ThreeDungeonView {
     }
 
     destroy() {
+        this._ready = false;
         window.removeEventListener('resize', this._resizeHandler);
         document.removeEventListener('mousemove', this._mouseMoveHandler);
         document.removeEventListener('pointerlockchange', this._pointerLockHandler);
         if (this._animationFrame) cancelAnimationFrame(this._animationFrame);
+        if (this._flickerFrame) cancelAnimationFrame(this._flickerFrame);
         if (this.canvas) this.canvas.remove();
         if (this.renderer) this.renderer.dispose();
-        this._ready = false;
+        for (var k in this._textures) {
+            if (this._textures[k]) this._textures[k].dispose();
+        }
     }
 }
